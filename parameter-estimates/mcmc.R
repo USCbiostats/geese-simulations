@@ -8,26 +8,14 @@
 #SBATCH --mail-type=ALL
 
 library(aphylo)
+library(geese)
 library(coda)
 
-gen_starts <- function(x, n, f = .1) {
-  x <- matrix(x, ncol = length(x), nrow = n, byrow = TRUE)
-  
-  upper_half <- x > .5
-  lower_half <- which(!upper_half)
-  upper_half <- which(upper_half)
-  
-  x[upper_half] <- x[upper_half] - runif(length(upper_half), min = f/3, max = f)
-  x[lower_half] <- x[lower_half] + runif(length(lower_half), min = f/3, max = f)
-  
-  x
-}
-
 shrink_towards_half <- function(x, margin=.01) {
-  
+
   x[x < (.5 - margin)] <- x[x < (.5 - margin)] + margin
   x[x > (.5 + margin)] <- x[x > (.5 + margin)] - margin
-  
+
   x
 }
 
@@ -41,7 +29,7 @@ lb.     <- c(1e-5)
 
 mcmc. <- list(
   nchains      = 4L,
-  multicore    = FALSE, 
+  multicore    = FALSE,
   burnin       = 0L,
   nsteps       = 5000L,
   conv_checker = NULL,
