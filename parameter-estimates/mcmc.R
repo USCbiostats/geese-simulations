@@ -65,11 +65,12 @@ for (tn in treeids) {
 }
 
 # First shot, looking at the most annotated functions --------------------------
-most_annotated <- head(sort(-sapply(data, function(d) length(d$ann[[1L]]))))
-most_annotated <- names(most_annotated)
+least_annotated <- sort(sapply(data, function(d) max(table(d$tree[,2]))), decreasing = FALSE)
+least_annotated <- least_annotated[least_annotated <= 5]
+least_annotated <- names(least_annotated)
 # [1] "PTHR10024" "PTHR11132" "PTHR11926" "PTHR19443" "PTHR24073" "PTHR24361"
 
-model1 <- with(data[[ most_annotated[1L] ]], new_geese(
+model1 <- with(data[[ least_annotated[1L] ]], new_geese(
   annotations = ann,
   geneid      = tree[,1],
   parent      = tree[,2],
@@ -77,16 +78,95 @@ model1 <- with(data[[ most_annotated[1L] ]], new_geese(
 ))
 
 
+term_overall_changes(model1, duplication = TRUE)
 term_overall_changes(model1, duplication = FALSE)
-term_gains(model1, 0:3)
-term_loss(model1, 0:3)
+term_genes_changing(model1, duplication = TRUE)
+term_gains(model1, 0)
+term_loss(model1, 0)
 
 # Currently fails b/c some nodes have 7 offspring.
 # 2^((7 + 1) * 4 functions) = 2 ^ 32 = 4,294,967,296 different cases
 # which the computer cannot handle.
+#
+# It turns out that, up to 9 is somewhat manageable (if dealing with a
+# single function). 2^(10)
 init_model(model1)
 
-ans <- geese_mcmc(model1)
+set.seed(112)
+ans <- geese_mcmc(
+  model1,
+  prior  = function(p) dlogis(p, location = c(1,-1,-1,1,-1,-2), scale = 2, log = TRUE),
+  nsteps = 20000,
+  kernel = fmcmc::kernel_ram(warmup = 5000)
+  )
+plot(ans)
+
+ans2 <- geese_mcmc(model1, nsteps = 20000, kernel = fmcmc::last_kernel())
+graphics.off()
+plot(window(ans2, start = 15000))
+
+# Making predictions
+estimates <- colMeans(window(ans2, start = 15000))
+pred_loo <- predict_geese(model1, estimates, leave_one_out = TRUE)
+pred_loo <- unlist(pred_loo)
+
+auc_geese <- aphylo::auc(
+  pred   = pred_loo,
+  labels = unlist(data[[ least_annotated[1L] ]]$ann)
+)
+
+# How about the baseline model?
+ans_aphylo <- aphylo_mcmc(
+  partially_annotated[[ least_annotated[1L] ]] ~ mu_d + mu_s + psi + Pi,
+  priors = bprior()
+  )
+
+auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)$auc
+
+# Looking at pooled models -----------------------------------------------------
+
+model2 <- new_flock()
+
+for (i in 1:4)
+  with(data[[ least_annotated[i] ]], add_geese(
+    model2,
+    annotations = ann,
+    geneid      = tree[,1],
+    parent      = tree[,2],
+    duplication = dpl
+  ))
+
+term_overall_changes(model2, duplication = TRUE)
+term_overall_changes(model2, duplication = FALSE)
+term_genes_changing(model2, duplication = TRUE)
+term_gains(model2, 0)
+term_loss(model2, 0)
+
+init_model(model2)
+
+set.seed(112)
+ans2 <- geese_mcmc(
+  model2,
+  prior  = function(p) dlogis(p, location = c(1,-1,-1,1,-1,-2), scale = 2, log = TRUE),
+  nsteps = 20000,
+  kernel = fmcmc::kernel_ram(warmup = 5000)
+)
+plot(ans2)
+
+ans2 <- geese_mcmc(model2, nsteps = 20000, kernel = fmcmc::last_kernel())
+graphics.off()
+plot(window(ans2, start = 15000))
+
+# Making predictions
+estimates2 <- colMeans(window(ans2, start = 15000))
+pred_loo2 <- predict_geese(model2, estimates2, leave_one_out = TRUE)
+pred_loo2 <- unlist(pred_loo2)
+
+auc_geese <- aphylo::auc(
+  pred   = pred_loo,
+  labels = unlist(data[[ least_annotated[1L] ]]$ann)
+)
+
 
 partially_annotated <- do.call(c, partially_annotated)
 partially_annotated <- unlist(lapply(partially_annotated, function(d) {
