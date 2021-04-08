@@ -20,12 +20,8 @@ shrink_towards_half <- function(x, margin=.01) {
 }
 
 # Common parameters
-# prior.  <- bprior(c(2,2,9,9,2,2,2,2,2), c(9,9,2,2,9,9,9,9,9))
-prior.  <- bprior(c(2,2,9,9,2,2,2), c(9,9,2,2,9,9,9))
 warmup. <- 500
 freq.   <- 10
-ub.     <- c(1 - 1e-5)
-lb.     <- c(1e-5)
 
 mcmc. <- list(
   nchains      = 4L,
@@ -33,7 +29,7 @@ mcmc. <- list(
   burnin       = 0L,
   nsteps       = 5000L,
   conv_checker = NULL,
-  kernel       = fmcmc::kernel_ram(lb = lb., ub = ub., warmup = warmup., freq = freq.),
+  kernel       = fmcmc::kernel_ram(warmup = warmup., freq = freq.),
   thin         = 10L
 )
 
@@ -42,6 +38,56 @@ set.seed(1362)
 # Fitting partially annotated trees --------------------------------------------
 
 partially_annotated <- readRDS("data/candidate_trees.rds")
+
+# Parsing the data
+treeids <- sort(unique(names(partially_annotated)))
+data    <- vector("list", length(treeids))
+names(data) <- treeids
+for (tn in treeids) {
+
+  # Preparing annotations
+  tmp_trees <- partially_annotated[names(partially_annotated) == tn]
+  tmp_ann   <- lapply(tmp_trees, function(a) rbind(a$tip.annotation, a$node.annotation))
+  tmp_ann   <- do.call(cbind, tmp_ann)
+
+  # Offspring -> parent, we need to add the root
+  tmp_tree  <- rbind(tmp_trees[[1]]$tree$edge[, 2:1], c(Ntip(tmp_trees[[1]]) + 1, -1))
+
+  # Sorting the annotations accordingly
+  tmp_ann <- tmp_ann[tmp_tree[,1],,drop=FALSE]
+  tmp_ann <- lapply(1:nrow(tmp_ann), function(i) tmp_ann[i ,])
+
+  data[[tn]] <- list(
+    tree = tmp_tree, ann = tmp_ann,
+    dpl  = with(tmp_trees[[1L]], c(tip.type, node.type))[tmp_tree[,1]] == 0L
+    )
+
+}
+
+# First shot, looking at the most annotated functions --------------------------
+most_annotated <- head(sort(-sapply(data, function(d) length(d$ann[[1L]]))))
+most_annotated <- names(most_annotated)
+# [1] "PTHR10024" "PTHR11132" "PTHR11926" "PTHR19443" "PTHR24073" "PTHR24361"
+
+model1 <- with(data[[ most_annotated[1L] ]], new_geese(
+  annotations = ann,
+  geneid      = tree[,1],
+  parent      = tree[,2],
+  duplication = dpl
+))
+
+
+term_overall_changes(model1, duplication = FALSE)
+term_gains(model1, 0:3)
+term_loss(model1, 0:3)
+
+# Currently fails b/c some nodes have 7 offspring.
+# 2^((7 + 1) * 4 functions) = 2 ^ 32 = 4,294,967,296 different cases
+# which the computer cannot handle.
+init_model(model1)
+
+ans <- geese_mcmc(model1)
+
 partially_annotated <- do.call(c, partially_annotated)
 partially_annotated <- unlist(lapply(partially_annotated, function(d) {
   lapply(1:Nann(d), function(i) d[,i])
