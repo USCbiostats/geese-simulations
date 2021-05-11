@@ -2,30 +2,6 @@ library(aphylo)
 library(geese)
 library(coda)
 
-shrink_towards_half <- function(x, margin=.01) {
-
-	  x[x < (.5 - margin)] <- x[x < (.5 - margin)] + margin
-  x[x > (.5 + margin)] <- x[x > (.5 + margin)] - margin
-
-    x
-}
-
-# Common parameters
-warmup. <- 500
-freq.   <- 10
-
-mcmc. <- list(
-	        nchains      = 4L,
-		  multicore    = FALSE,
-		  burnin       = 0L,
-		    nsteps       = 5000L,
-		    conv_checker = NULL,
-		      kernel       = fmcmc::kernel_ram(warmup = warmup., freq = freq.),
-		      thin         = 10L
-		      )
-
-set.seed(1362)
-
 # Fitting partially annotated trees --------------------------------------------
 
 partially_annotated <- readRDS("data/candidate_trees.rds")
@@ -83,7 +59,7 @@ data_to_include <- colnames(data_features)[data_to_include]
 
 model2fit <- new_flock()
 for (i in data_to_include) {
-  
+
   if (length(data[[i]]$ann[[1]]) > 1)
     next
 
@@ -98,19 +74,17 @@ for (i in data_to_include) {
 }
 
 # Building the model
-#term_overall_changes(model2fit, duplication = TRUE)
-#term_overall_changes(model2fit, duplication = FALSE)
+nfunctions <- 1
+term_overall_changes(model2fit, duplication = TRUE)
+term_overall_changes(model2fit, duplication = FALSE)
 term_genes_changing(model2fit, duplication = TRUE)
-term_genes_changing(model2fit, duplication = FALSE)
-term_gains(model2fit, 0, TRUE)
-term_loss(model2fit, 0, TRUE)
-term_gains(model2fit, 0, FALSE)
-term_loss(model2fit, 0, FALSE)
+term_gains(model2fit, 0:(nfunctions - 1))
+term_loss(model2fit, 0:(nfunctions - 1))
+term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
-rule_limit_changes(model2fit, 2, 0, 4, TRUE)
-rule_limit_changes(model2fit, 3, 0, 4, FALSE)
-rule_limit_changes(model2fit, 4, 0, 4, TRUE)
-rule_limit_changes(model2fit, 5, 0, 4, FALSE)
+rule_limit_changes(model2fit, 0, 0, 4, TRUE)
+rule_limit_changes(model2fit, 1, 0, 4, FALSE)
 
 
 # Currently fails b/c some nodes have 7 offspring.
@@ -118,18 +92,17 @@ rule_limit_changes(model2fit, 5, 0, 4, FALSE)
 # which the computer cannot handle, unless using restrictions.
 init_model(model2fit)
 
-loc <- c(-.5,-1,.5,-1,-1, -1,-5)
-
-set.seed(1231)
+set.seed(112)
+loc <- c(0,0,-1/2,rep(1/2, nfunctions),rep(-1, nfunctions),rep(-9, nfunctions))
 ans_geese_mcmc <- geese_mcmc(
   model2fit,
   prior  = function(p) dlogis(p, location = loc, scale = 2, log = TRUE),
-  nsteps = 1e3,
+  nsteps = 2e4,
   kernel = fmcmc::kernel_am(
-    warmup = 500,
-    # fixed  = c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE),
-    ub     = 10,
-    lb     = -10
-  )
-)
+    warmup = 5e3,
+    fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
+    lb     = -10,
+    ub     = 10
+  ))
+
 

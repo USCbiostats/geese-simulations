@@ -11,30 +11,6 @@ library(aphylo)
 library(geese)
 library(coda)
 
-shrink_towards_half <- function(x, margin=.01) {
-
-  x[x < (.5 - margin)] <- x[x < (.5 - margin)] + margin
-  x[x > (.5 + margin)] <- x[x > (.5 + margin)] - margin
-
-  x
-}
-
-# Common parameters
-warmup. <- 500
-freq.   <- 10
-
-mcmc. <- list(
-  nchains      = 4L,
-  multicore    = FALSE,
-  burnin       = 0L,
-  nsteps       = 5000L,
-  conv_checker = NULL,
-  kernel       = fmcmc::kernel_ram(warmup = warmup., freq = freq.),
-  thin         = 10L
-)
-
-set.seed(1362)
-
 # Fitting partially annotated trees --------------------------------------------
 
 partially_annotated <- readRDS("data/candidate_trees.rds")
@@ -52,7 +28,7 @@ for (tn in treeids) {
   tmp_ann   <- do.call(cbind, tmp_ann)
 
   # Creating the aphylo version
-  
+
   if (sum(names(partially_annotated) == tn) > 1)
     adata[[tn]] <- do.call(c, tmp_trees)
   else
@@ -123,9 +99,10 @@ for (current_tree in colnames(data_features)) {
   term_overall_changes(model2fit, duplication = TRUE)
   term_overall_changes(model2fit, duplication = FALSE)
   term_genes_changing(model2fit, duplication = TRUE)
-  term_genes_changing(model2fit, duplication = FALSE)
   term_gains(model2fit, 0:(nfunctions - 1))
   term_loss(model2fit, 0:(nfunctions - 1))
+  term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+  term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
   rule_limit_changes(model2fit, 0, 0, 4, TRUE)
   rule_limit_changes(model2fit, 1, 0, 4, FALSE)
@@ -137,26 +114,26 @@ for (current_tree in colnames(data_features)) {
   message("This model's support size is: ", support_size(model2fit))
 
   set.seed(112)
-
-  loc <- c(0,0,-.5,-1,rep(.5,nfunctions), rep(-1,nfunctions), rep(-1, nfunctions))
-
+  loc <- c(0,0,-1/2,rep(1/2, nfunctions),rep(-1, nfunctions),rep(-9, nfunctions))
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
     prior  = function(p) dlogis(p, location = loc, scale = 2, log = TRUE),
     nsteps = 2e4,
     kernel = fmcmc::kernel_am(
       warmup = 5e3,
-      fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2))
-    ))	     
+      fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
+      lb     = -10,
+      ub     = 10
+    ))
 
   # Making predictions
-  estimates <- colMeans(window(ans_geese_mcmc, start = 1e4))
+  estimates <- colMeans(window(ans_geese_mcmc, start = 1.8e4))
   pred_loo <- predict_geese(model2fit, estimates, leave_one_out = TRUE)
   pred_loo <- unlist(pred_loo)
 
-  auc_geese <- aphylo::auc(
-    pred   = pred_loo,
-    labels = unlist(data[[ current_tree ]]$ann)
+  auc_geese <- aphylo::prediction_score(
+    x   = cbind(pred_loo),
+    expected = cbind(unlist(data[[ current_tree ]]$ann))
   )
 
   # How about the baseline model?
@@ -169,10 +146,12 @@ for (current_tree in colnames(data_features)) {
 
   output <- list(
     geese_mcmc  = ans_geese_mcmc,
-    geese_auc   = auc_geese,
+    geese_auc   = auc_geese$auc,
+    geese_mae   = 1 - auc_geese$obs,
     geese_pred  = pred_loo,
     aphylo_mcmc = ans_aphylo,
     aphylo_auc  = auc_aphylo$auc,
+    aphylo_mae  = 1 - auc_aphylo$obs,
     aphylo_pred = auc_aphylo$predicted,
     labels      = unlist(data[[ current_tree ]]$ann),
     tree        = partially_annotated[[ current_tree ]]

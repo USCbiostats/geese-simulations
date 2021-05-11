@@ -11,13 +11,7 @@ aucs <- lapply(dat, function(d) {
 
 maes <- lapply(dat, function(d){
 
-  p_geese  <- d$geese_pred
-  p_aphylo <- 1-aphylo::prediction_score(d$aphylo_mcmc)$obs
-
-  obs <- d$labels
-  ids <- which(obs != 9)
-
-  c(geese = mean(abs(p_geese - obs)[ids]), aphylo = p_aphylo)
+  c(geese = d$geese_mae, aphylo = d$aphylo_mae)
 })
 
 aucs <- as.data.frame(do.call(rbind, aucs))
