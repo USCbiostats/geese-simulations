@@ -52,7 +52,11 @@ for (tn in treeids) {
   tmp_ann   <- do.call(cbind, tmp_ann)
 
   # Creating the aphylo version
-  adata[[tn]] <- do.call(c, tmp_trees)
+  
+  if (sum(names(partially_annotated) == tn) > 1)
+    adata[[tn]] <- do.call(c, tmp_trees)
+  else
+    adata[[tn]] <- tmp_trees[[1L]]
 
   # Offspring -> parent, we need to add the root
   tmp_tree  <- rbind(tmp_trees[[1]]$tree$edge[, 2:1], c(Ntip(tmp_trees[[1]]) + 1, -1))
@@ -98,8 +102,10 @@ for (current_tree in colnames(data_features)) {
 
   # Checking if tree was already analyzed
   fn <- sprintf("parameter-estimates/mcmc-%s.rds", current_tree)
-  if (file.exists(fn))
+  if (file.exists(fn)) {
     message("This tree was already analyzed...")
+    next
+  }
 
   model2fit <- with(data[[ current_tree ]], new_geese(
     annotations = ann,
@@ -108,6 +114,8 @@ for (current_tree in colnames(data_features)) {
     duplication = dpl
   ))
 
+  nfunctions <- length(data[[current_tree]]$ann[[1]])
+
   # Checkingout number of polytomies
   parse_polytomies(model2fit)
 
@@ -115,11 +123,12 @@ for (current_tree in colnames(data_features)) {
   term_overall_changes(model2fit, duplication = TRUE)
   term_overall_changes(model2fit, duplication = FALSE)
   term_genes_changing(model2fit, duplication = TRUE)
-  term_gains(model2fit, 0)
-  term_loss(model2fit, 0)
+  term_genes_changing(model2fit, duplication = FALSE)
+  term_gains(model2fit, 0:(nfunctions - 1))
+  term_loss(model2fit, 0:(nfunctions - 1))
 
   rule_limit_changes(model2fit, 0, 0, 4, TRUE)
-  rule_limit_changes(model2fit, 0, 0, 4, FALSE)
+  rule_limit_changes(model2fit, 1, 0, 4, FALSE)
 
   # Currently fails b/c some nodes have 7 offspring.
   # 2^((7 + 1) * 4 functions) = 2 ^ 32 = 4,294,967,296 different cases
@@ -128,12 +137,17 @@ for (current_tree in colnames(data_features)) {
   message("This model's support size is: ", support_size(model2fit))
 
   set.seed(112)
+
+  loc <- c(0,0,-.5,-1,rep(.5,nfunctions), rep(-1,nfunctions), rep(-1, nfunctions))
+
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
-    prior  = function(p) dlogis(p, location = c(1,-1,-1,1,-1,-1), scale = 2, log = TRUE),
+    prior  = function(p) dlogis(p, location = loc, scale = 2, log = TRUE),
     nsteps = 2e4,
-    kernel = fmcmc::kernel_ram(warmup = 5e3)
-    )
+    kernel = fmcmc::kernel_am(
+      warmup = 5e3,
+      fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2))
+    ))	     
 
   # Making predictions
   estimates <- colMeans(window(ans_geese_mcmc, start = 1e4))
@@ -147,7 +161,7 @@ for (current_tree in colnames(data_features)) {
 
   # How about the baseline model?
   ans_aphylo <- aphylo_mcmc(
-    partially_annotated[[ current_tree ]] ~ mu_d + mu_s + psi + Pi,
+    adata[[ current_tree ]] ~ mu_d + mu_s + psi + Pi,
     priors = bprior(c(2,2,9,5,2,2,5), c(9,9,2,5,9,9,5))
     )
 
