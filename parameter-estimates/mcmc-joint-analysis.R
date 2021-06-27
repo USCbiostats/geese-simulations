@@ -1,7 +1,7 @@
 library(aphylo)
 
 # Reading the parameter estimates
-dat <- readRDS("parameter-estimates/mcmc-joint-geese2.rds")
+dat <- readRDS("parameter-estimates/mcmc-joint-geese3.rds")
 
 # Retrieving predictions
 pred_geese <- dat$pred
@@ -21,6 +21,12 @@ pred_geese <- sapply(pred_geese, function(x) x$obs)
 
 
 pred_aphylo <- prediction_score(dat$aphylo, loo = TRUE)
+
+overall_auc_aphylo <- prediction_score(
+  x = do.call(rbind, lapply(pred_aphylo, "[[", "predicted")),
+  expected = do.call(rbind, lapply(pred_aphylo, "[[", "expected"))
+)
+
 pred_aphylo <- sapply(pred_aphylo, function(x) x$obs)
 
 plot(1 - pred_geese, 1 - pred_aphylo)
@@ -43,4 +49,4 @@ prop.test(table(pred_geese < pred_aphylo))
 # Overal MAE and AUC
 
 
-plot(window(dat$mcmc, start=10000))
+plot(window(dat$mcmc, start=5e3))

@@ -16,3 +16,7 @@ It has the following columns:
 -  GO id, for example "GO:0000122”. 
 -  Annotation qualifier (NOT).
 
+# Predictions from aphylo and sifter
+
+The file `predictions_assesment.csv` was downloaded from the GitHub
+repository: https://github.com/USCbiostats/sifter-aphylo
