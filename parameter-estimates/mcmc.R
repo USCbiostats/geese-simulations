@@ -114,20 +114,32 @@ for (current_tree in colnames(data_features)) {
   message("This model's support size is: ", support_size(model2fit))
 
   set.seed(112)
-  loc <- c(0,0,-1/2,rep(1/2, nfunctions),rep(-1, nfunctions),rep(-9, nfunctions))
+
+  loc <- c(
+    # Overall changes
+    0, 0,
+    # Genes changing at duplication
+    -1/2,
+    # Gains and loss x nfunctions (duplication)
+    rep(1/2, nfunctions), rep(-1/2, nfunctions),
+    # Gains and loss x nfunctions (speciation)
+    rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
+    # rep(0, nfunctions)
+  )
+
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
-    prior  = function(p) dlogis(p, location = loc, scale = 2, log = TRUE),
-    nsteps = 2e4,
+    prior  = function(p) dnorm(p[-length(p)], mean = loc, sd = 2, log = TRUE),
+    nsteps = 20000, burnin = 0,
     kernel = fmcmc::kernel_am(
-      warmup = 5e3,
+      warmup = 2e3,
       fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
       lb     = -10,
       ub     = 10
     ))
 
   # Making predictions
-  estimates <- colMeans(window(ans_geese_mcmc, start = 1.8e4))
+  estimates <- colMeans(window(ans_geese_mcmc, start = 10000))
   pred_loo <- predict_geese(model2fit, estimates, leave_one_out = TRUE)
   pred_loo <- unlist(pred_loo)
 
@@ -137,8 +149,9 @@ for (current_tree in colnames(data_features)) {
   )
 
   # How about the baseline model?
+  atree <- adata[[ current_tree ]]
   ans_aphylo <- aphylo_mcmc(
-    adata[[ current_tree ]] ~ mu_d + mu_s + psi + Pi,
+    atree ~ mu_d + mu_s + psi + Pi,
     priors = bprior(c(2,2,9,5,2,2,5), c(9,9,2,5,9,9,5))
     )
 
@@ -146,14 +159,9 @@ for (current_tree in colnames(data_features)) {
 
   output <- list(
     geese_mcmc  = ans_geese_mcmc,
-    geese_auc   = auc_geese$auc,
-    geese_mae   = 1 - auc_geese$obs,
-    geese_pred  = pred_loo,
+    geese_auc   = auc_geese,
     aphylo_mcmc = ans_aphylo,
-    aphylo_auc  = auc_aphylo$auc,
-    aphylo_mae  = 1 - auc_aphylo$obs,
-    aphylo_pred = auc_aphylo$predicted,
-    labels      = unlist(data[[ current_tree ]]$ann),
+    aphylo_auc  = auc_aphylo,
     tree        = partially_annotated[[ current_tree ]]
   )
 
