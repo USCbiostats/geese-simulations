@@ -42,6 +42,10 @@ auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)
 
 # Building the model
 nfunctions <- 1
+# Checkingout number of polytomies
+parse_polytomies(model2fit)
+
+# Building the model
 term_overall_changes(model2fit, duplication = TRUE)
 term_overall_changes(model2fit, duplication = FALSE)
 term_genes_changing(model2fit, duplication = TRUE)
@@ -50,39 +54,41 @@ term_loss(model2fit, 0:(nfunctions - 1))
 term_gains(model2fit, 0:(nfunctions - 1), FALSE)
 term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
-rule_limit_changes(model2fit, 0, 0, 5, TRUE)
-rule_limit_changes(model2fit, 1, 0, 5, FALSE)
-
+rule_limit_changes(model2fit, 0, 0, 4, TRUE)
+rule_limit_changes(model2fit, 1, 0, 4, FALSE)
 
 # Currently fails b/c some nodes have 7 offspring.
 # 2^((7 + 1) * 4 functions) = 2 ^ 32 = 4,294,967,296 different cases
 # which the computer cannot handle, unless using restrictions.
 init_model(model2fit)
+message("This model's support size is: ", support_size(model2fit))
 
 set.seed(112)
 
-# Prior
 loc <- c(
-  0, 0, -1/2,
-  rep(1/2, nfunctions),
-  rep(-1/2, nfunctions),
-  rep(-1/2, nfunctions),
-  rep(-1/2, nfunctions),
-  rep(-4, nfunctions)
+  # Overall changes
+  0, 0,
+  # Genes changing at duplication
+  -1/2,
+  # Gains and loss x nfunctions (duplication)
+  rep(1/2, nfunctions), rep(-1/2, nfunctions),
+  # Gains and loss x nfunctions (speciation)
+  rep(-1/2, nfunctions), rep(-1/2, nfunctions),
+  rep(0, nfunctions)
 )
 
 # loc <- c(0,0, -1/2, 1/2, -1/2, -1/2, -1,-9)
 # loc <- c(rep(0, nterms(model2fit) - 1), -9)
 ans_geese_mcmc <- geese_mcmc(
   model2fit,
-  initial = loc,
+  initial = loc*0,
   prior  = function(p) dnorm(p, mean = loc, sd = 1, log = TRUE),
   nsteps = 2e4,
   kernel = fmcmc::kernel_am(
     warmup = 1e3,
-    # fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 3), rep(TRUE, nfunctions)),
-    lb     = -10,
-    ub     = 10
+    fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
+    lb     = -9,
+    ub     = 9
   ))
 
 estimates <- colMeans(window(ans_geese_mcmc, start = 1e4))

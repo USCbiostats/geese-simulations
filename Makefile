@@ -14,3 +14,7 @@ joint: parameter-estimates/mcmc-joint-geese.R
 analysis-mcmc:
 	Rscript --vanilla -e \
 		'source("parameter-estimates/mcmc-analysis.R", echo = TRUE)'
+analysis-joint:
+	Rscript --vanilla -e \
+		'source("parameter-estimates/mcmc-joint-analysis.R", echo = TRUE)'
+

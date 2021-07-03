@@ -50,3 +50,11 @@ prop.test(table(pred_geese < pred_aphylo))
 
 
 plot(window(dat$mcmc, start=5e3))
+
+graphics.off()
+pdf("parameter-estimates/mcmc-joint-analysis-auc.pdf")
+plot(overall_auc_geese$auc, lty="dashed", lwd = 1.5)
+with(overall_auc_aphylo$auc, lines(x = fpr, y = tpr, col = "red", lwd=1.5))
+legend("bottomright", legend = c("geese", "aphylo"), col = c("black", "red"), lty = c(1,2), bty="n")
+dev.off()
+
