@@ -18,6 +18,7 @@ partially_annotated <- readRDS("data/candidate_trees.rds")
 # Parsing the data
 treeids <- sort(unique(names(partially_annotated)))
 data    <- vector("list", length(treeids))
+adata   <- data # aphylo data
 names(data) <- treeids
 for (tn in treeids) {
 
@@ -29,9 +30,9 @@ for (tn in treeids) {
   # Creating the aphylo version
 
   if (sum(names(partially_annotated) == tn) > 1)
-    adata_tm <- do.call(c, tmp_trees)
+    adata[[tn]] <- do.call(c, tmp_trees)
   else
-    adata_tm <- tmp_trees[[1L]]
+    adata[[tn]] <- tmp_trees[[1L]]
 
   # Offspring -> parent, we need to add the root
   tmp_tree  <- rbind(tmp_trees[[1]]$tree$edge[, 2:1], c(Ntip(tmp_trees[[1]]) + 1, -1))
@@ -41,11 +42,8 @@ for (tn in treeids) {
   tmp_ann <- lapply(1:nrow(tmp_ann), function(i) tmp_ann[i ,])
 
   data[[tn]] <- list(
-    edges = tmp_tree,
-    ann   = tmp_ann,
-    dpl   = with(tmp_trees[[1L]], c(tip.type, node.type))[tmp_tree[,1]] == 0L,
-    genes = with(tmp_trees[[1L]]$tree, c(tip.label, node.label))[tmp_tree[,1]],
-    tree  = adata_tm
+    tree = tmp_tree, ann = tmp_ann,
+    dpl  = with(tmp_trees[[1L]], c(tip.type, node.type))[tmp_tree[,1]] == 0L
     )
 
 }
@@ -53,7 +51,7 @@ for (tn in treeids) {
 # Obtaining features to figure out whether we can deal with it
 data_features <- sapply(data, function(d) {
 
-  tab <- table(table(d$edges[,2]))
+  tab <- table(table(d$tree[,2]))
   ans <- c(
     polytomes = max(as.integer(names(tab))),
     functions = length(d$ann[[1]])
@@ -79,87 +77,12 @@ for (current_tree in colnames(data_features)) {
   message(paste(rep("#", options("width")), collapse = ""))
 
   # Checking if tree was already analyzed
-  fn <- sprintf("parameter-estimates/mcmc-geese-%s.rds", current_tree)
+  fn <- sprintf("parameter-estimates/mcmc-%s.rds", current_tree)
   if (file.exists(fn)) {
     message("This tree was already analyzed...")
-  } else {
-
-<<<<<<< HEAD
-    model2fit <- with(data[[ current_tree ]], new_geese(
-      annotations = ann,
-      geneid      = edges[,1],
-      parent      = edges[,2],
-      duplication = dpl
-    ))
-
-    nfunctions <- length(data[[current_tree]]$ann[[1]])
-
-    # Checkingout number of polytomies
-    parse_polytomies(model2fit)
-
-    # Building the model
-    # term_overall_changes(model2fit, duplication = TRUE)
-    # term_overall_changes(model2fit, duplication = FALSE)
-    term_prop_genes_changing(model2fit, duplication = TRUE)
-    term_prop_genes_changing(model2fit, duplication = FALSE)
-    term_gains(model2fit, 0:(nfunctions - 1))
-    term_loss(model2fit, 0:(nfunctions - 1))
-    term_gains(model2fit, 0:(nfunctions - 1), FALSE)
-    term_loss(model2fit, 0:(nfunctions - 1), FALSE)
-
-    rule_limit_changes(model2fit, 0, 0, .5, TRUE)
-    rule_limit_changes(model2fit, 1, 0, .5, FALSE)
-
-    # Currently fails b/c some nodes have 7 offspring.
-    # 2^((7 + 1) * 4 functions) = 2 ^ 32 = 4,294,967,296 different cases
-    # which the computer cannot handle, unless using restrictions.
-    init_model(model2fit)
-    message("This model's support size is: ", support_size(model2fit))
-
-    set.seed(112)
-    # loc <- c(0,0,-1/2,rep(1/2, nfunctions),rep(-1, nfunctions),rep(-9, nfunctions))
-    loc <- c(
-      0, 0,
-      rep(1/2, nfunctions),
-      rep(-1, nfunctions),
-      rep(1/2, nfunctions),
-      rep(-1, nfunctions),
-      rep(-9, nfunctions)
-      )
-
-    ans_geese_mcmc <- geese_mcmc(
-      model2fit,
-      prior  = function(p) dnorm(p, mean = loc, sd = 2, log = TRUE),
-      nsteps = 2e4,
-      kernel = fmcmc::kernel_am(
-        warmup = 5e3,
-#        fixed  = c(rep(FALSE, nterms(model2fit) - 1)),
-        lb     = -10,
-        ub     = 10
-      ))
-
-    # Making predictions
-    estimates <- colMeans(window(ans_geese_mcmc, start = 1.8e4))
-    pred_loo <- predict_geese(model2fit, estimates, leave_one_out = TRUE)
-    pred_loo <- unlist(pred_loo)
-
-    auc_geese <- aphylo::prediction_score(
-      x   = cbind(pred_loo),
-      expected = cbind(unlist(data[[ current_tree ]]$ann))
-    )
-
-    output <- list(
-      mcmc   = ans_geese_mcmc,
-      auc    = auc_geese$auc,
-      mae    = 1 - auc_geese$obs,
-      pred   = pred_loo,
-      labels = unlist(data[[ current_tree ]]$ann),
-      tree   = data[[ current_tree ]]$tree
-    )
-
-    saveRDS(output, file = fn)
+    next
   }
-=======
+
   model2fit <- with(data[[ current_tree ]], new_geese(
     annotations = ann,
     geneid      = tree[,1],
@@ -219,38 +142,13 @@ for (current_tree in colnames(data_features)) {
   estimates <- colMeans(window(ans_geese_mcmc, start = 10000))
   pred_loo <- predict_geese(model2fit, estimates, leave_one_out = TRUE)
   pred_loo <- unlist(pred_loo)
->>>>>>> edc4484
 
+  auc_geese <- aphylo::prediction_score(
+    x   = cbind(pred_loo),
+    expected = cbind(unlist(data[[ current_tree ]]$ann))
+  )
 
   # How about the baseline model?
-<<<<<<< HEAD
-  # Checking if tree was already analyzed
-  fn <- sprintf("parameter-estimates/mcmc-aphylo-%s.rds", current_tree)
-  if (file.exists(fn)) {
-
-    message("This tree was already analyzed...")
-
-  } else {
-
-    tmp_tree <- data[[ current_tree ]]$tree
-    ans_aphylo <- aphylo_mcmc(
-      tmp_tree ~ mu_d + mu_s + psi + Pi,
-      priors = bprior(c(2,2,9,5,2,2,5), c(9,9,2,5,9,9,5))
-      )
-
-    auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)
-
-    output <- list(
-      mcmc   = ans_aphylo,
-      auc    = auc_aphylo$auc,
-      mae    = 1 - auc_aphylo$obs,
-      pred   = auc_aphylo$predicted,
-      labels = auc_aphylo$expected,
-      tree   = data[[ current_tree ]]$tree
-    )
-
-    saveRDS(output, file = fn)
-=======
   atree <- adata[[ current_tree ]]
   ans_aphylo <- aphylo_mcmc(
     atree ~ mu_d + mu_s + psi + Pi,
@@ -266,9 +164,8 @@ for (current_tree in colnames(data_features)) {
     aphylo_auc  = auc_aphylo,
     tree        = partially_annotated[[ current_tree ]]
   )
->>>>>>> edc4484
 
-  }
+  saveRDS(output, file = fn)
 
 }
 
