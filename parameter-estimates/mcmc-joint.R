@@ -31,6 +31,7 @@ for (i in data_to_include) {
 ################################################################################
 
 # Aphylo
+set.seed(212)
 adata <- do.call(c, lapply(model_data[data_to_include], "[[", "tree"))
 ans_aphylo <- aphylo_mcmc(
   adata ~ mu_d + mu_s + psi + Pi,
@@ -38,6 +39,14 @@ ans_aphylo <- aphylo_mcmc(
 )
 
 auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)
+
+set.seed(212)
+ans_aphylo_no_prior <- aphylo_mcmc(
+  adata ~ mu_d + mu_s + psi + Pi,
+  priors = function(p) 1,
+)
+
+auc_aphylo_no_prior <- prediction_score(ans_aphylo_no_prior, loo = TRUE)
 # stop()
 
 # Building the model
@@ -83,7 +92,7 @@ ans_geese_mcmc <- geese_mcmc(
   model2fit,
   initial = loc*0,
   prior  = function(p) dnorm(p, mean = loc, sd = 1, log = TRUE),
-  nsteps = 2e4,
+  nsteps = 4e4,
   kernel = fmcmc::kernel_am(
     warmup = 1e3,
     fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
@@ -91,18 +100,39 @@ ans_geese_mcmc <- geese_mcmc(
     ub     = 9
   ))
 
-estimates <- colMeans(window(ans_geese_mcmc, start = 1e4))
+estimates <- colMeans(window(ans_geese_mcmc, start = 2e4))
 
 pred <- predict_flock(model2fit, estimates, leave_one_out = TRUE)
 
+# No prior
+set.seed(1112)
+ans_geese_mcmc_no_prior <- geese_mcmc(
+  model2fit,
+  initial = loc*0,
+  prior  = function(p) 0,
+  nsteps = 4e4,
+  kernel = fmcmc::kernel_am(
+    warmup = 1e3,
+    fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
+    lb     = -9,
+    ub     = 9
+  ))
+
+estimates_no_prior <- colMeans(window(ans_geese_mcmc_no_prior, start = 2e4))
+
+pred_no_prior <- predict_flock(model2fit, estimates_no_prior, leave_one_out = TRUE)
+
 ans <- list(
-  mcmc     = ans_geese_mcmc,
-  pred     = pred,
-  data     = model_data[data_to_include],
-  aphylo   = ans_aphylo
+  mcmc            = ans_geese_mcmc,
+  mcmc_no_prior   = ans_geese_mcmc,
+  pred            = pred,
+  pred_no_prior   = pred,
+  data            = model_data[data_to_include],
+  aphylo          = ans_aphylo,
+  aphylo_no_prior = ans_aphylo_no_prior
 )
 
-saveRDS(ans, "parameter-estimates/mcmc-joint-geese3.rds")
+saveRDS(ans, "parameter-estimates/mcmc-joint-geese.rds")
 
 
 

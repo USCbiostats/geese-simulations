@@ -7,13 +7,14 @@ mcmc-no-prior: parameter-estimates/mcmc-no-prior.R
 		parameter-estimates/mcmc-no-prior.Rout &
 
 
-joint: parameter-estimates/mcmc-joint-geese.R
-	R CMD BATCH --vanilla parameter-estimates/mcmc-joint-geese.R \
-		parameter-estimates/mcmc-joint-geese.Rout &
+joint: parameter-estimates/mcmc-joint.R
+	R CMD BATCH --vanilla parameter-estimates/mcmc-joint.R \
+		parameter-estimates/mcmc-joint.Rout &
 
 analysis-mcmc:
 	Rscript --vanilla -e \
 		'source("parameter-estimates/mcmc-analysis.R", echo = TRUE)'
+
 analysis-joint:
 	Rscript --vanilla -e \
 		'source("parameter-estimates/mcmc-joint-analysis.R", echo = TRUE)'
