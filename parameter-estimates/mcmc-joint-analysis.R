@@ -1,9 +1,25 @@
 library(aphylo)
 
 # Reading the parameter estimates
-dat <- readRDS("parameter-estimates/mcmc-joint.rds")
+# dat <- readRDS("parameter-estimates/mcmc-joint.rds")
 
-# Retrieving predictions
+dat_geese_prior <- readRDS("parameter-estimates/mcmc-joint-geese-prior.rds")
+dat_geese_no_prior <- readRDS("parameter-estimates/mcmc-joint-geese-no-prior.rds")
+dat_aphylo <- readRDS("parameter-estimates/mcmc-joint-aphylo.rds")
+
+dat <- list(
+  mcmc = dat_geese_prior$mcmc,
+  mcmc_no_prior = dat_geese_no_prior$mcmc,
+  pred = dat_geese_prior$pred,
+  pred_no_prior = dat_geese_no_prior$pred,
+  data = dat_geese_prior$data,
+  aphylo = dat_aphylo$aphylo,
+  aphylo_no_prior = dat_aphylo$aphylo_no_prior
+)
+
+# Geese scores -----------------------------------------------------------------
+
+# With prior
 pred_geese <- dat$pred
 pred_geese <- lapply(pred_geese, do.call, what=rbind)
 
@@ -19,7 +35,22 @@ mae_geese <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d
     p = pred_geese, d = dat_labs)
 mae_geese <- sapply(mae_geese, function(x) 1 - x$obs)
 
+# Without prior
+pred_geese_no_prior <- dat$pred_no_prior
+pred_geese_no_prior <- lapply(pred_geese_no_prior, do.call, what=rbind)
 
+overall_auc_geese_no_prior <- prediction_score(
+  x        = do.call(rbind, pred_geese_no_prior),
+  expected = do.call(rbind, dat_labs)
+)
+
+mae_geese_no_prior <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d)),
+                 p = pred_geese_no_prior, d = dat_labs)
+mae_geese_no_prior <- sapply(mae_geese_no_prior, function(x) 1 - x$obs)
+
+# Aphylo scores -----------------------------------------------------------------
+
+# With prior
 mae_aphylo <- prediction_score(dat$aphylo, loo = TRUE)
 
 overall_auc_aphylo <- prediction_score(
@@ -27,13 +58,24 @@ overall_auc_aphylo <- prediction_score(
   expected = do.call(rbind, lapply(mae_aphylo, "[[", "expected"))
 )
 
-mae_aphylo <- sapply(mae_aphylo, function(x) x$obs)
+mae_aphylo <- sapply(mae_aphylo, function(x) 1 - x$obs)
 
-plot(1 - mae_geese, 1 - mae_aphylo, main = "1 - MAE")
+# Without prior
+mae_aphylo_no_prior <- prediction_score(dat$aphylo_no_prior, loo = TRUE)
+
+overall_auc_aphylo_no_prior <- prediction_score(
+  x = do.call(rbind, lapply(mae_aphylo_no_prior, "[[", "predicted")),
+  expected = do.call(rbind, lapply(mae_aphylo_no_prior, "[[", "expected"))
+)
+
+mae_aphylo_no_prior <- sapply(mae_aphylo_no_prior, function(x) 1 - x$obs)
+
+plot(1 - mae_geese_no_prior, 1 - mae_aphylo_no_prior, main = "1 - MAE")
 abline(a = 0, b = 1)
 
 
 prop.test(table(mae_geese < mae_aphylo))
+prop.test(table(mae_geese_no_prior < mae_aphylo_no_prior))
 #
 # 1-sample proportions test with continuity correction
 #
@@ -61,17 +103,17 @@ loc <- c(
 )
 
 # Preparing for ggplot
-ggdat <- lapply(3:ncol(dat$mcmc), function(i)
+ggdat <- lapply(3:ncol(dat$mcmc_no_prior), function(i)
   data.frame(
-    Term  = colnames(dat$mcmc)[i],
-    Step  = 1:nrow(dat$mcmc),
-    Param = as.vector(dat$mcmc[,i]),
+    Term  = colnames(dat$mcmc_no_prior)[i],
+    Step  = 1:nrow(dat$mcmc_no_prior),
+    Param = as.vector(dat$mcmc_no_prior[,i]),
     Prior = loc[i]
   )
 )
 ggdat <- do.call(rbind, ggdat)
 library(ggplot2)
-ggplot(data = subset(ggdat, Step >= 5000), mapping = aes(y = Param, x = Step)) +
+ggplot(data = subset(ggdat, Step >= 10000), mapping = aes(y = Param, x = Step)) +
   geom_line(col = "tomato") +
   facet_wrap(vars(Term)) +
   geom_abline(slope = 0, intercept = 0, lty=2) +

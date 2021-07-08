@@ -90,9 +90,9 @@ geese_mae <- lapply(dat, function(d) {
 })
 
 geese_mae <- do.call(rbind, geese_mae)
-geese_mae <- aphylo::prediction_score(
+(geese_mae <- aphylo::prediction_score(
   x = geese_mae[,1,drop=FALSE], expected = geese_mae[,2,drop=FALSE]
-  )
+  ))
 
 aphylo_mae <- lapply(dat, function(d) {
   with(d$aphylo_auc, cbind(predicted, expected))
@@ -100,9 +100,9 @@ aphylo_mae <- lapply(dat, function(d) {
 })
 
 aphylo_mae <- do.call(rbind, aphylo_mae)
-aphylo_mae <- aphylo::prediction_score(
+(aphylo_mae <- aphylo::prediction_score(
   x = aphylo_mae[,1,drop=FALSE], expected = aphylo_mae[,2,drop=FALSE]
-)
+))
 
 graphics.off()
 svg("parameter-estimates/mcmc-analysis.svg")

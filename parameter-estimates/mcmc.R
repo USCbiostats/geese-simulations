@@ -100,7 +100,7 @@ for (current_tree in colnames(data_features)) {
   term_overall_changes(model2fit, duplication = FALSE)
   term_genes_changing(model2fit, duplication = TRUE)
   term_gains(model2fit, 0:(nfunctions - 1))
-  term_loss(model2fit, 0:(nfunctions - 1))
+  # term_loss(model2fit, 0:(nfunctions - 1))
   term_gains(model2fit, 0:(nfunctions - 1), FALSE)
   term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
@@ -121,7 +121,7 @@ for (current_tree in colnames(data_features)) {
     # Genes changing at duplication
     -1/2,
     # Gains and loss x nfunctions (duplication)
-    rep(1/2, nfunctions), rep(-1/2, nfunctions),
+    rep(1/2, nfunctions), # rep(-1/2, nfunctions),
     # Gains and loss x nfunctions (speciation)
     rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
     # rep(0, nfunctions)
@@ -169,114 +169,3 @@ for (current_tree in colnames(data_features)) {
 
 }
 
-#
-#
-# # Looking at pooled models -----------------------------------------------------
-#
-# model2 <- new_flock()
-#
-# for (i in 1:4)
-#   with(data[[ least_annotated[i] ]], add_geese(
-#     model2,
-#     annotations = ann,
-#     geneid      = tree[,1],
-#     parent      = tree[,2],
-#     duplication = dpl
-#   ))
-#
-# term_overall_changes(model2, duplication = TRUE)
-# term_overall_changes(model2, duplication = FALSE)
-# term_genes_changing(model2, duplication = TRUE)
-# term_gains(model2, 0)
-# term_loss(model2, 0)
-#
-# init_model(model2)
-#
-# set.seed(112)
-# ans2 <- geese_mcmc(
-#   model2,
-#   prior  = function(p) dlogis(p, location = c(1,-1,-1,1,-1,-2), scale = 2, log = TRUE),
-#   nsteps = 20000,
-#   kernel = fmcmc::kernel_ram(warmup = 5000)
-# )
-# plot(ans2)
-#
-# ans2 <- geese_mcmc(model2, nsteps = 20000, kernel = fmcmc::last_kernel())
-# graphics.off()
-# plot(window(ans2, start = 15000))
-#
-# # Making predictions
-# estimates2 <- colMeans(window(ans2, start = 15000))
-# pred_loo2 <- predict_flock(model2, estimates2, leave_one_out = TRUE)
-# pred_loo2 <- unlist(pred_loo2)
-#
-# auc_geese <- aphylo::auc(
-#   pred   = pred_loo,
-#   labels = unlist(data[[ least_annotated[1L] ]]$ann)
-# )
-#
-#
-# partially_annotated <- do.call(c, partially_annotated)
-# partially_annotated <- unlist(lapply(partially_annotated, function(d) {
-#   lapply(1:Nann(d), function(i) d[,i])
-# }), recursive = FALSE)
-# partially_annotated <- do.call(c, partially_annotated)
-#
-# # 1.A: No prior
-# ans_mle_partially_annotated_no_prior <- aphylo_mle(
-#   partially_annotated ~ psi + mu_d + mu_s + Pi
-# )
-#
-# message("Partially annotated: MLE No prior done.")
-#
-# saveRDS(
-#   ans_mle_partially_annotated_no_prior,
-#   "parameter-estimates/mle_partially_annotated_no_prior.rds"
-#   )
-#
-# # In this case we don't need that many samples, this converges faster
-# mcmc.$nsteps <- 5000L
-#
-# set.seed(173812)
-# mcmc.$kernel <- fmcmc::kernel_adapt(lb = lb., ub = ub., warmup = warmup., freq = 1L)
-# ans_mcmc_partially_annotated_no_prior <- aphylo_mcmc(
-#   partially_annotated ~ psi + mu_d + mu_s + Pi,
-#   params  = gen_starts(coef(ans_mle_partially_annotated_no_prior), mcmc.$nchains),
-#   control = mcmc.
-# )
-#
-# message("Partially annotated: MCMC No prior done.")
-#
-# saveRDS(
-#   ans_mcmc_partially_annotated_no_prior,
-#   "parameter-estimates/mcmc_partially_annotated_no_prior.rds"
-#   )
-# # 1.B: Prior
-# ans_mle_partially_annotated_prior <- aphylo_mle(
-#   partially_annotated ~ psi + mu_d + mu_s + Pi, priors = prior.
-# )
-#
-# message("Partially annotated: MLE prior done.")
-#
-# saveRDS(
-#   ans_mle_partially_annotated_prior,
-#   "parameter-estimates/mle_partially_annotated_prior.rds"
-#   )
-#
-# set.seed(8812831)
-# mcmc.$kernel <- fmcmc::kernel_adapt(lb = lb., ub = ub., warmup = warmup., freq = 1L)
-# ans_mcmc_partially_annotated_prior <- aphylo_mcmc(
-#   partially_annotated ~ psi + mu_d + mu_s + Pi,
-#   priors = prior.,
-#   params  = gen_starts(coef(ans_mle_partially_annotated_prior), mcmc.$nchains),
-#   control = mcmc.
-# )
-#
-# message("Partially annotated: MCMC prior done.")
-#
-# saveRDS(
-#   ans_mcmc_partially_annotated_prior,
-#   "parameter-estimates/mcmc_partially_annotated_prior.rds"
-#   )
-#
-#
