@@ -10,6 +10,14 @@ add_geese(
   duplication = c(TRUE, TRUE, TRUE)
   )
 
+add_geese(
+  p           = model2fit,
+  annotations = list(0,0,0),
+  geneid      = c(0,1,2),
+  parent      = c(-1,0,0),
+  duplication = !c(TRUE, TRUE, TRUE)
+)
+
 nfunctions <- 1L
 term_overall_changes(model2fit, duplication = TRUE)
 term_overall_changes(model2fit, duplication = FALSE)
@@ -33,52 +41,66 @@ coefs <- c(
   `Root 1` = 1.64267185610882
 )
 
+# Case 1: Moving from no function to both having a function
 transition_prob(
   p           = model2fit,
   duplication = TRUE,
   params      = coefs[-7],
   state       = FALSE,
-  array       = matrix(c(1,1), nrow = 1), as_log = FALSE
+  array       = matrix(c(1,1), nrow = 1),
+  as_log = FALSE
 )
 
-coefs <- coefs[-c(1:2, 7)]
+# Case 2: Gaining a function given a sibling did
+conditional_prob(
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(1,1), nrow = 1),
+  i = 0, j = 0
+)
+
+# Case 3: Speciation event
+conditional_prob(
+  p           = model2fit,
+  duplication = FALSE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(1,1), nrow = 1),
+  i = 0, j = 0
+)
+
+# Case 4: Probability of preserving the function given sib lost
+conditional_prob(
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = TRUE,
+  array       = matrix(c(1,0), nrow = 1),
+  i = 0, j = 0
+)
+
+# Case 5: Probability either gains a function
+# This is equal to 1 - P(no gain at all)
+1 - transition_prob(
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(0,0), nrow = 1),
+  as_log = FALSE
+)
 
 
-# Cases: (Spec, Dupl) x (0, 1) x (Gain, Lose) x (Sib 0, Sib 1) -----------------
-
-# Case: (Spec, 0, Gain, Sib 0), Gain a function in spec given sib doesn't have
-# - (A has function) - (No change)
-# - c(0, 0, 1, 0) - 0
-counts_1 <- (c(0, 0, 1, 0) - 0) * coefs
-1/(1 + exp(-sum(counts_1)))
-
-# Case: (Dupl, 0, Gain, Sib 0), Gain a function in dupl given sib doesn't have
-# - (A has function) - (No change)
-# - c(1, 1, 0, 0) - 0
-counts_1 <- (c(1, 1, 0, 0) - 0) * coefs
-1/(1 + exp(-sum(counts_1)))
+1 - transition_prob(
+  p           = model2fit,
+  duplication = FALSE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(0,0), nrow = 1),
+  as_log = FALSE
+)
 
 
-# Case 1: Only B gains the function
-# - (B has the function) - (Both have the function)
-# - c(1, 1, 0, 0) - c(2, 2, 0, 0)
-counts_1 <- (c(1, 1, 0, 0) - c(2, 2, 0, 0)) * coefs
-1/(1 + exp(-sum(counts_1)))
 
-# Case 2: No changes at spec event (given B)
-# - (No changes) - (A lost a func)
-counts_1 <- (c(0, 0, 0, 0) - c(0, 0, 0, 1) ) * coefs
-1/(1 + exp(-sum(counts_1)))
-
-# Case 3: A gains a function from scratch (given B doesn't)
-# - (Neither has a function) - (A gains a function)
-counts_1 <- (c(0,0,0,0) - c(0, 0, 1, 0)) * coefs
-1/(1 + exp(-sum(counts_1)))
-
-# Case 4: A preserves the function given B lost it
-counts_1 <- c(-1, 0, 0, 0) * coefs
-1 - 1/(1 + exp(-sum(counts_1)))
-
-# Case 5: Likelihood of either gaining the function
-# = P(A, ~B|~P) + P(~A, B|~P) + P(A, B|~P)
-# = P(A|~B,~P)P(~B|P) + P(~B|A,~P)P(~A|P) +
