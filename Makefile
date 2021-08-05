@@ -11,6 +11,10 @@ joint: parameter-estimates/mcmc-joint.R
 	R CMD BATCH --vanilla parameter-estimates/mcmc-joint.R \
 		parameter-estimates/mcmc-joint.Rout &
 
+secondrun: parameter-estimates/mcmc-joint-geese-second-run.R
+	R CMD BATCH --vanilla parameter-estimates/mcmc-joint-geese-second-run.R \
+		parameter-estimates/mcmc-joint-geese-second-run.Rout &
+
 analysis-mcmc:
 	Rscript --vanilla -e \
 		'source("parameter-estimates/mcmc-analysis.R", echo = TRUE)'

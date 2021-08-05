@@ -31,6 +31,8 @@ rule_limit_changes(model2fit, 1, 0, 4, FALSE)
 
 init_model(model2fit)
 
+# dat_geese_prior <- readRDS("parameter-estimates/mcmc-joint-geese-prior.rds")
+# colMeans(window(dat_geese_prior$mcmc, start = 1e4))
 coefs <- c(
   `Overall changes at duplication` = 0,
   `Overall changes at speciation` = 0,
@@ -42,7 +44,9 @@ coefs <- c(
 )
 
 # Case 1: Moving from no function to both having a function
-transition_prob(
+
+# Both gain
+transition_prob( # Duplication
   p           = model2fit,
   duplication = TRUE,
   params      = coefs[-7],
@@ -51,55 +55,114 @@ transition_prob(
   as_log = FALSE
 )
 
-# Case 2: Gaining a function given a sibling did
-conditional_prob(
-  p           = model2fit,
-  duplication = TRUE,
-  params      = coefs[-7],
-  state       = FALSE,
-  array       = matrix(c(1,1), nrow = 1),
-  i = 0, j = 0
-)
-
-# Case 3: Speciation event
-conditional_prob(
+transition_prob( # Speciation
   p           = model2fit,
   duplication = FALSE,
   params      = coefs[-7],
   state       = FALSE,
   array       = matrix(c(1,1), nrow = 1),
+  as_log = FALSE
+)
+
+# Only one gain
+transition_prob( # Duplication
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(0,1), nrow = 1),
+  as_log = FALSE
+)
+
+transition_prob( # Speciation
+  p           = model2fit,
+  duplication = FALSE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(0,1), nrow = 1),
+  as_log = FALSE
+)
+
+# Wither gain
+1 - transition_prob( # Duplication
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(0,0), nrow = 1),
+  as_log = FALSE
+)
+
+1 - transition_prob( # Speciation
+  p           = model2fit,
+  duplication = FALSE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(0,0), nrow = 1),
+  as_log = FALSE
+)
+
+# Both lose the function
+transition_prob( # Duplication
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = TRUE,
+  array       = matrix(c(1,1)*0, nrow = 1),
+  as_log = FALSE
+)
+
+transition_prob( # Speciation
+  p           = model2fit,
+  duplication = FALSE,
+  params      = coefs[-7],
+  state       = TRUE,
+  array       = matrix(c(1,1)*0, nrow = 1),
+  as_log = FALSE
+)
+
+# Case 2: Gain given sib does not (so sib preserves a 0)
+
+# Duplication
+conditional_prob(
+  p           = model2fit,
+  duplication = TRUE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(1,0), nrow = 1),
   i = 0, j = 0
 )
 
-# Case 4: Probability of preserving the function given sib lost
+# Speciation
+conditional_prob(
+  p           = model2fit,
+  duplication = FALSE,
+  params      = coefs[-7],
+  state       = FALSE,
+  array       = matrix(c(1,0), nrow = 1),
+  i = 0, j = 0
+)
+
+# Case 3: Preserve a one given sib does
+
+# Duplication
 conditional_prob(
   p           = model2fit,
   duplication = TRUE,
   params      = coefs[-7],
   state       = TRUE,
-  array       = matrix(c(1,0), nrow = 1),
+  array       = matrix(c(1,1), nrow = 1),
   i = 0, j = 0
 )
 
-# Case 5: Probability either gains a function
-# This is equal to 1 - P(no gain at all)
-1 - transition_prob(
-  p           = model2fit,
-  duplication = TRUE,
-  params      = coefs[-7],
-  state       = FALSE,
-  array       = matrix(c(0,0), nrow = 1),
-  as_log = FALSE
-)
-
-
-1 - transition_prob(
+# Speciation
+conditional_prob(
   p           = model2fit,
   duplication = FALSE,
   params      = coefs[-7],
-  state       = FALSE,
-  array       = matrix(c(0,0), nrow = 1),
-  as_log = FALSE
+  state       = TRUE,
+  array       = matrix(c(1,1), nrow = 1),
+  i = 0, j = 0
 )
 
 
