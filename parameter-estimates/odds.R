@@ -70,7 +70,7 @@ transition_prob( # Duplication
   duplication = TRUE,
   params      = coefs[-7],
   state       = FALSE,
-  array       = matrix(c(0,1), nrow = 1),
+  array       = matrix(c(0,0), nrow = 1),
   as_log = FALSE
 )
 
@@ -83,7 +83,7 @@ transition_prob( # Speciation
   as_log = FALSE
 )
 
-# Wither gain
+# Either gain
 1 - transition_prob( # Duplication
   p           = model2fit,
   duplication = TRUE,
@@ -131,7 +131,7 @@ conditional_prob(
   state       = FALSE,
   array       = matrix(c(1,0), nrow = 1),
   i = 0, j = 0
-)
+) * 2
 
 # Speciation
 conditional_prob(

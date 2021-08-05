@@ -170,6 +170,9 @@ writeLines(
 plot_mae(x = mae_geese, y = mae_aphylo, fn = "fig/mcmc-joint-analysis-mae.svg")
 plot_auc(x = overall_auc_geese, y = overall_auc_aphylo, fn = "fig/mcmc-joint-analysis-auc.svg")
 
+plot_mae(x = mae_geese_no_prior, y = mae_aphylo_no_prior, fn = "fig/mcmc-joint-analysis-mae-no-prior.svg")
+plot_auc(x = overall_auc_geese_no_prior, y = overall_auc_aphylo_no_prior, fn = "fig/mcmc-joint-analysis-auc-no-prior.svg")
+
 saveRDS(
   list(auc_geese = overall_auc_geese, auc_aphylo_joint = overall_auc_aphylo),
   file = "parameter-estimates/mcmc-joint-analysis.rds"

@@ -136,7 +136,7 @@ if (!file.exists(fn)) {
 set.seed(212)
 adata <- do.call(c, lapply(model_data[data_to_include], "[[", "tree"))
 ans_aphylo <- aphylo_mcmc(
-  adata ~ mu_d + mu_s + psi + Pi,
+  adata ~ mu_s + mu_d + psi + Pi,
   priors = bprior(c(2,2,9,5,2,2,5), c(9,9,2,5,9,9,5)),
 )
 
@@ -144,7 +144,7 @@ auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)
 
 set.seed(212)
 ans_aphylo_no_prior <- aphylo_mcmc(
-  adata ~ mu_d + mu_s + psi + Pi,
+  adata ~ mu_s + mu_d + psi + Pi,
   priors = function(p) 1,
 )
 

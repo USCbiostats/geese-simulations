@@ -151,7 +151,7 @@ for (current_tree in colnames(data_features)) {
   # How about the baseline model?
   atree <- adata[[ current_tree ]]
   ans_aphylo <- aphylo_mcmc(
-    atree ~ mu_d + mu_s + psi + Pi,
+    atree ~ mu_s + mu_d + psi + Pi,
     priors = bprior(c(2,2,9,5,2,2,5), c(9,9,2,5,9,9,5))
     )
 

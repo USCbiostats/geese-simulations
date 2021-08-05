@@ -37,11 +37,11 @@ plot_auc <- function(x, y, fn) {
 
 # Maes one-at-a-time
 #' @param x,y Numeric vectors of MAEs.
-plot_mae <- function(x, y, fn, xlab. = "GEESE", ylab. = "aphylo", main. = "MAE per tree") {
+plot_mae <- function(x, y, fn, xlab. = "GEESE", ylab. = "aphylo", main. = "MAE per tree", size = 7, cex. = 1.75) {
   graphics.off()
-  svg(fn)
+  svg(fn, width = size, height = size)
   ranges <- apply(cbind(x, y), 2, range)
-  op <- par(bg = "lightgray")
+  op <- par(bg = "lightgray", cex = cex., cex.lab = cex., cex.axis = cex.)
   plot.new()
   plot.window(xlim = ranges[,1], ylim = ranges[,2])
   rect(-1,-1,2,2, col = "white", border = "transparent")
