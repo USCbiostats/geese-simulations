@@ -100,7 +100,7 @@ if (!file.exists(fn)) {
 
 }
 
-fn <- "parameter-estimates/mcmc-joint-geese-no-prior.rds"
+fn <- "parameter-estimates/mcmc-joint-geese-uniform-prior.rds"
 
 if (!file.exists(fn)) {
   # No prior

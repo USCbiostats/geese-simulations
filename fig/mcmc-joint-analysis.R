@@ -6,7 +6,7 @@ source("fig/plot_functions.R")
 # dat <- readRDS("parameter-estimates/mcmc-joint.rds")
 
 dat_geese_prior    <- readRDS("parameter-estimates/mcmc-joint-geese-prior.rds")
-dat_geese_no_prior <- readRDS("parameter-estimates/mcmc-joint-geese-no-prior.rds")
+dat_geese_no_prior <- readRDS("parameter-estimates/mcmc-joint-geese-uniform-prior.rds")
 dat_aphylo         <- readRDS("parameter-estimates/mcmc-joint-aphylo.rds")
 
 dat <- list(
@@ -163,15 +163,15 @@ rownames(table_) <- gsub("\\s+[0-9]", "", colnames(dat$mcmc_no_prior)[-c(1, 2)])
 
 writeLines(
   knitr::kable(table_, format="latex", digits=2, booktabs = TRUE),
-  con = "fig/mcmc-joint-analysis-estimates-no-prior.tex"
+  con = "fig/mcmc-joint-analysis-estimates-uniform-prior.tex"
   )
 
 # Figures ----------------------------------------------------------------------
 plot_mae(x = mae_geese, y = mae_aphylo, fn = "fig/mcmc-joint-analysis-mae.svg")
 plot_auc(x = overall_auc_geese, y = overall_auc_aphylo, fn = "fig/mcmc-joint-analysis-auc.svg")
 
-plot_mae(x = mae_geese_no_prior, y = mae_aphylo_no_prior, fn = "fig/mcmc-joint-analysis-mae-no-prior.svg")
-plot_auc(x = overall_auc_geese_no_prior, y = overall_auc_aphylo_no_prior, fn = "fig/mcmc-joint-analysis-auc-no-prior.svg")
+plot_mae(x = mae_geese_no_prior, y = mae_aphylo_no_prior, fn = "fig/mcmc-joint-analysis-mae-uniform-prior.svg")
+plot_auc(x = overall_auc_geese_no_prior, y = overall_auc_aphylo_no_prior, fn = "fig/mcmc-joint-analysis-auc-uniform-prior.svg")
 
 saveRDS(
   list(auc_geese = overall_auc_geese, auc_aphylo_joint = overall_auc_aphylo),
