@@ -93,10 +93,10 @@ aprior <- function(p) {
 # loc <- c(0,0, -1/2, 1/2, -1/2, -1/2, -1,-9)
 # loc <- c(rep(0, nterms(model2fit) - 1), -9)
 if (!file.exists(fn)) {
+
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
-    initial = loc*0,
-    prior  = function(p) dnorm(p, mean = loc, sd = 1, log = TRUE),
+    prior  = function(p) dnorm(p[-(length(p) + 1 - 1:nfunctions)], mean = loc, sd = 2, log = TRUE),
     nsteps = NSTEPS,
     kernel = fmcmc::kernel_ram(
       warmup = 1e3,
@@ -127,7 +127,6 @@ if (!file.exists(fn)) {
   set.seed(1112)
   ans_geese_mcmc_no_prior <- geese_mcmc(
     model2fit,
-    initial = loc*0,
     prior  = function(p) 0,
     nsteps = NSTEPS,
     kernel = fmcmc::kernel_ram(
@@ -157,7 +156,7 @@ set.seed(212)
 adata <- do.call(c, lapply(model_data[data_to_include], "[[", "tree"))
 ans_aphylo <- aphylo_mcmc(
   adata ~ mu_d + mu_s + Pi,
-  priors = bprior(c(9,5,2,2,5), c(2,5,9,9,5)),
+  priors = aprior,
 )
 
 auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)

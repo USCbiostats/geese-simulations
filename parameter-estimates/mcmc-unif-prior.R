@@ -97,10 +97,10 @@ for (current_tree in colnames(data_features)) {
   # Building the model
   term_overall_changes(model2fit, duplication = TRUE)
   term_overall_changes(model2fit, duplication = FALSE)
-  term_genes_changing(model2fit, duplication = TRUE)
+  # term_genes_changing(model2fit, duplication = TRUE)
   term_gains(model2fit, 0:(nfunctions - 1))
-  # term_loss(model2fit, 0:(nfunctions - 1))
   term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+  term_loss(model2fit, 0:(nfunctions - 1))
   term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
   rule_limit_changes(model2fit, 0, 0, 4, TRUE)
@@ -118,13 +118,16 @@ for (current_tree in colnames(data_features)) {
     # Overall changes
     0, 0,
     # Genes changing at duplication
-    -1/2,
+    # -1/2,
     # Gains and loss x nfunctions (duplication)
-    rep(1/2, nfunctions), # rep(-1/2, nfunctions),
+    rep(1/2, nfunctions), rep(-1/2, nfunctions),
     # Gains and loss x nfunctions (speciation)
     rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
     # rep(0, nfunctions)
   )
+
+  # Setting up names
+  names(loc) <- names(model2fit)
 
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
