@@ -40,9 +40,10 @@ parse_polytomies(model2fit)
 # Building the model
 term_overall_changes(model2fit, duplication = TRUE)
 term_overall_changes(model2fit, duplication = FALSE)
-term_genes_changing(model2fit, duplication = TRUE)
+# term_genes_changing(model2fit, duplication = TRUE)
 term_gains(model2fit, 0:(nfunctions - 1))
 term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+term_loss(model2fit, 0:(nfunctions - 1))
 term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
 rule_limit_changes(model2fit, 0, 0, 4, TRUE)
@@ -62,13 +63,32 @@ loc <- c(
   # Overall changes
   0, 0,
   # Genes changing at duplication
-  -1/2,
+  # -1/2,
   # Gains and loss x nfunctions (duplication)
-  rep(1/2, nfunctions), # rep(-1/2, nfunctions),
+  rep(1/2, nfunctions), rep(-1/2, nfunctions),
   # Gains and loss x nfunctions (speciation)
-  rep(-1/2, nfunctions), rep(-1/2, nfunctions),
-  rep(0, nfunctions)
+  rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
+  # rep(0, nfunctions)
 )
+
+# Setting up names
+names(loc) <- names(model2fit)
+
+# We need to map it back
+loc_aphylo <- c(
+  mu_d0 = loc["Gains 0 at duplication"], mu_d1 = loc["Loss 0 at duplication"],
+  mu_s0 = loc["Gains 0 at speciation"], mu_s1 = loc["Loss 0 at speciation"]
+)
+
+aprior <- function(p) {
+  dnorm(
+    x    = qlogis(p[c("mu_d0", "mu_d1", "mu_s0", "mu_s1")]),
+    mean = loc_aphylo,
+    sd   = 2,
+    log  = FALSE
+  )
+
+}
 
 # loc <- c(0,0, -1/2, 1/2, -1/2, -1/2, -1,-9)
 # loc <- c(rep(0, nterms(model2fit) - 1), -9)

@@ -98,10 +98,10 @@ for (current_tree in colnames(data_features)) {
   # Building the model
   term_overall_changes(model2fit, duplication = TRUE)
   term_overall_changes(model2fit, duplication = FALSE)
-  term_genes_changing(model2fit, duplication = TRUE)
+  # term_genes_changing(model2fit, duplication = TRUE)
   term_gains(model2fit, 0:(nfunctions - 1))
-  # term_loss(model2fit, 0:(nfunctions - 1))
   term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+  term_loss(model2fit, 0:(nfunctions - 1))
   term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
   rule_limit_changes(model2fit, 0, 0, 4, TRUE)
@@ -119,17 +119,20 @@ for (current_tree in colnames(data_features)) {
     # Overall changes
     0, 0,
     # Genes changing at duplication
-    -1/2,
+    # -1/2,
     # Gains and loss x nfunctions (duplication)
-    rep(1/2, nfunctions), # rep(-1/2, nfunctions),
+    rep(1/2, nfunctions), rep(-1/2, nfunctions),
     # Gains and loss x nfunctions (speciation)
     rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
     # rep(0, nfunctions)
   )
 
+  # Setting up names
+  names(loc) <- names(model2fit)
+
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
-    prior  = function(p) dnorm(p[-length(p)], mean = loc, sd = 2, log = TRUE),
+    prior  = function(p) dnorm(p[-(length(p) + 1 - 1:nfunctions)], mean = loc, sd = 2, log = TRUE),
     nsteps = 20000, burnin = 0,
     kernel = fmcmc::kernel_am(
       warmup = 2e3,
@@ -148,11 +151,28 @@ for (current_tree in colnames(data_features)) {
     expected = cbind(unlist(data[[ current_tree ]]$ann))
   )
 
-  # How about the baseline model?
+  # How about the baseline model? ----------------------------------------------
+
+  # We need to map it back
+  loc_aphylo <- c(
+    mu_d0 = loc["Gains 0 at duplication"], mu_d1 = loc["Loss 0 at duplication"],
+    mu_s0 = loc["Gains 0 at speciation"], mu_s1 = loc["Loss 0 at speciation"]
+    )
+
+  aprior <- function(p) {
+    dnorm(
+      x    = qlogis(p[c("mu_d0", "mu_d1", "mu_s0", "mu_s1")]),
+      mean = loc_aphylo,
+      sd   = 2,
+      log  = FALSE
+      )
+
+  }
+
   atree <- adata[[ current_tree ]]
   ans_aphylo <- aphylo_mcmc(
     atree ~ mu_s + mu_d + Pi,
-    priors = bprior(c(9,5,2,2,5), c(2,5,9,9,5))
+    priors = aprior
     )
 
   auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)

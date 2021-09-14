@@ -44,8 +44,8 @@ maes <- lapply(dat, function(d) {
 
 maes <- do.call(rbind, maes)
 
-prop.test(table(maes[,1] <= maes[,2]))
-prop.test(table(aucs[,1] >= aucs[,2]))
+tryCatch(prop.test(table(maes[,1] <= maes[,2])), error = function(e) e)
+tryCatch(prop.test(table(aucs[,1] >= aucs[,2])), error = function(e) e)
 
 
 nfunctions <- aphylo::Nann(dat[[2]]$tree)
