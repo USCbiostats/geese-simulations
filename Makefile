@@ -17,9 +17,12 @@ secondrun: parameter-estimates/mcmc-joint-geese-second-run.R
 
 analysis-mcmc:
 	Rscript --vanilla -e \
-		'source("parameter-estimates/mcmc-analysis.R", echo = TRUE)'
+		'source("fig/mcmc-analysis.R", echo = TRUE)'
+analysis-mcmc-unif:
+	Rscript --vanilla -e \
+		'source("fig/mcmc-analysis-uniform-prior.R", echo = TRUE)'
 
 analysis-joint:
 	Rscript --vanilla -e \
-		'source("parameter-estimates/mcmc-joint-analysis.R", echo = TRUE)'
+		'source("fig/mcmc-joint-analysis.R", echo = TRUE)'
 

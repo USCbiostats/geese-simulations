@@ -80,7 +80,6 @@ for (current_tree in colnames(data_features)) {
   fn <- sprintf("parameter-estimates/mcmc-unif-prior-%s.rds", current_tree)
   if (file.exists(fn)) {
     message("This tree was already analyzed...")
-    next
   }
 
   model2fit <- with(data[[ current_tree ]], new_geese(
@@ -151,7 +150,7 @@ for (current_tree in colnames(data_features)) {
   # How about the baseline model?
   atree <- adata[[ current_tree ]]
   ans_aphylo <- aphylo_mcmc(
-    atree ~ mu_s + mu_d + psi + Pi,
+    atree ~ mu_s + mu_d + Pi,
     priors = uprior()
   )
 
