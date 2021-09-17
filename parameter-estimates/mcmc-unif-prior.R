@@ -132,7 +132,7 @@ for (current_tree in colnames(data_features)) {
   ans_geese_mcmc <- geese_mcmc(
     model2fit,
     prior  = function(p) 0, # Uniform prior
-    nsteps = 20000, burnin = 0,
+    nsteps = 20000, burnin = 0, thin = 1,
     kernel = fmcmc::kernel_am(
       warmup = 2e3,
       fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
@@ -140,13 +140,17 @@ for (current_tree in colnames(data_features)) {
       ub     = 10
     ))
 
+  # ans_geese_mle <- optim(par=rep(0, nterms(model2fit) - 2), fn = function(p) -likelihood(p=model2fit, par = c(0,0,p), as_log = TRUE))
+  # plogis(ans_geese_mle$par)
+
   # Making predictions
   estimates <- colMeans(window(ans_geese_mcmc, start = 10000))
+  # estimates <- c(0,0,ans_geese_mle$par)
   pred_loo <- predict_geese(model2fit, estimates, leave_one_out = TRUE)
   pred_loo <- unlist(pred_loo)
 
   auc_geese <- aphylo::prediction_score(
-    x   = cbind(pred_loo),
+    x        = cbind(pred_loo),
     expected = cbind(unlist(data[[ current_tree ]]$ann))
   )
 
@@ -154,9 +158,27 @@ for (current_tree in colnames(data_features)) {
   atree <- adata[[ current_tree ]]
   ans_aphylo <- aphylo_mcmc(
     atree ~ mu_s + mu_d + Pi,
-    priors = uprior()
+    params = APHYLO_PARAM_DEFAULT[c("mu_d0", "mu_d1", "mu_s0", "mu_s1", "Pi")] * 0 + .5,
+    priors = uprior(),
+    control = list(
+      nsteps = 20000, burnin = 0, thin = 1,
+      kernel = fmcmc::kernel_am(
+        warmup = 2000,
+        lb     = .000001,
+        ub     = .999999,
+        eps    = 1e-4/20
+      ),
+      nchains = 1,
+      conv_checker = NULL
+    )
   )
 
+  # ans_aphylo_mle <- aphylo_mle(
+  #   atree ~ mu_d + mu_s + Pi,
+  #   params = APHYLO_PARAM_DEFAULT[c("mu_d0", "mu_d1", "mu_s0", "mu_s1", "Pi")] * 0 + .5
+  # )
+
+  ans_aphylo <- window(ans_aphylo, start = 10000)
   auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)
 
   output <- list(

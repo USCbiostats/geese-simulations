@@ -19,6 +19,31 @@ dat <- list(
   aphylo_no_prior = dat_aphylo$aphylo_no_prior
 )
 
+nfunctions <- 1
+
+loc <- c(
+  # Overall changes
+  0, 0,
+  # Genes changing at duplication
+  # -1/2,
+  # Gains and loss x nfunctions (duplication)
+  rep(1/2, nfunctions), rep(-1/2, nfunctions),
+  # Gains and loss x nfunctions (speciation)
+  rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
+  # rep(0, nfunctions)
+)
+
+names(loc) <- c(
+  "ogains_d", "ogains_s", "Gains 0 at duplication", "Loss 0 at duplication",
+  "Gains 0 at speciation", "Loss 0 at speciation")
+
+# We need to map it back
+loc_aphylo <- c(
+  mu_d0 = loc["Gains 0 at duplication"], mu_d1 = loc["Loss 0 at duplication"],
+  mu_s0 = loc["Gains 0 at speciation"], mu_s1 = loc["Loss 0 at speciation"]
+)
+
+
 # Geese scores -----------------------------------------------------------------
 
 # With prior
