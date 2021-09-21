@@ -103,6 +103,8 @@ for (current_tree in colnames(data_features)) {
   term_gains(model2fit, 0:(nfunctions - 1), FALSE)
   term_loss(model2fit, 0:(nfunctions - 1))
   term_loss(model2fit, 0:(nfunctions - 1), FALSE)
+  term_k_genes_changing(model2fit, 1, TRUE)
+  term_k_genes_changing(model2fit, 1, FALSE)
 
   rule_limit_changes(model2fit, 0, 0, 4, TRUE)
   rule_limit_changes(model2fit, 1, 0, 4, FALSE)
@@ -123,8 +125,8 @@ for (current_tree in colnames(data_features)) {
     # Gains and loss x nfunctions (duplication)
     rep(1/2, nfunctions), rep(-1/2, nfunctions),
     # Gains and loss x nfunctions (speciation)
-    rep(-1/2, nfunctions), rep(-1/2, nfunctions) #,
-    # rep(0, nfunctions)
+    rep(-1/2, nfunctions), rep(-1/2, nfunctions),
+    c(1/2, 1/2)
   )
 
   # Setting up names

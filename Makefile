@@ -26,3 +26,7 @@ analysis-joint:
 	Rscript --vanilla -e \
 		'source("fig/mcmc-joint-analysis.R", echo = TRUE)'
 
+.PHONY: ls
+ls:
+	ls -alt parameter-estimates/mcmc-PTH*.rds | wc -l ; \
+		ls -alt parameter-estimates/mcmc-unif*.rds | wc -l
