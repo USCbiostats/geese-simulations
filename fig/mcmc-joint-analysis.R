@@ -159,6 +159,8 @@ table_$`Credible Interval` <- apply(window(dat$mcmc[,-c(1:2)], start=10000), 2, 
 
 })
 
+colnames(dat$mcmc_no_prior)[colnames(dat$mcmc_no_prior) == "1"] <- paste("1 gene changing at", c("duplication", "speciation"))
+
 rownames(table_) <- gsub("\\s+[0-9]", "", colnames(dat$mcmc_no_prior)[-c(1, 2)])
 
 writeLines(
