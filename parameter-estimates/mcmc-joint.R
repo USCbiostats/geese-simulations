@@ -41,8 +41,8 @@ parse_polytomies(model2fit)
 term_overall_changes(model2fit, duplication = TRUE)
 term_overall_changes(model2fit, duplication = FALSE)
 # term_genes_changing(model2fit, duplication = TRUE)
-term_gains(model2fit, 0:(nfunctions - 1))
-term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+# term_gains(model2fit, 0:(nfunctions - 1))
+# term_gains(model2fit, 0:(nfunctions - 1), FALSE)
 term_loss(model2fit, 0:(nfunctions - 1))
 term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 term_k_genes_changing(model2fit, 1, TRUE)
@@ -63,7 +63,7 @@ set.seed(112)
 
 loc <- c(
   # Overall changes
-  0, 0,
+  # 0, 0,
   # Genes changing at duplication
   # -1/2,
   # Gains and loss x nfunctions (duplication)
@@ -75,6 +75,11 @@ loc <- c(
 
 # Setting up names
 names(loc) <- names(model2fit)
+
+ans_geese_mle <- geese_mle(
+  model2fit, initial = c(loc, root = 0),
+  hessian = TRUE, control = list(fnscale = -1), method = "BFGS"
+  )
 
 # We need to map it back
 loc_aphylo <- c(
@@ -107,7 +112,7 @@ if (!file.exists(fn)) {
       ub     = 9
     ))
 
-  estimates <- colMeans(window(ans_geese_mcmc, start = NSTEPS/2))
+  estimates <- colMeans(window(ans_geese_mcmc, start = NSTEPS*3/4))
 
   pred <- predict_flock(model2fit, estimates, leave_one_out = TRUE)
 
@@ -139,7 +144,7 @@ if (!file.exists(fn)) {
     ))
 
 
-  estimates_no_prior <- colMeans(window(ans_geese_mcmc_no_prior, start = NSTEPS/2))
+  estimates_no_prior <- colMeans(window(ans_geese_mcmc_no_prior, start = NSTEPS*3/4))
 
   pred_no_prior <- predict_flock(model2fit, estimates_no_prior, leave_one_out = TRUE)
   saveRDS(
@@ -182,8 +187,4 @@ ans <- list(
 )
 
 saveRDS(ans, "parameter-estimates/mcmc-joint-aphylo.rds")
-
-
-
-
 
