@@ -6,6 +6,9 @@ mcmc-unif-prior: parameter-estimates/mcmc-unif-prior.R
 	R CMD BATCH --vanilla parameter-estimates/mcmc-unif-prior.R \
 		parameter-estimates/mcmc-unif-prior.Rout &
 
+mcmc-unif-prior-curated: parameter-estimates/mcmc-unif-prior-curated.R
+	R CMD BATCH --vanilla parameter-estimates/mcmc-unif-prior-curated.R \
+		parameter-estimates/mcmc-unif-prior-curated.Rout &
 
 joint: parameter-estimates/mcmc-joint.R
 	R CMD BATCH --vanilla parameter-estimates/mcmc-joint.R \

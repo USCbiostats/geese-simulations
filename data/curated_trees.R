@@ -1,37 +1,48 @@
 library(aphylo)
 library(geese)
 
-list.files("data-raw/pthr16LimitedCandTreeSet")
+partially_annotated <- readRDS("data-raw/pthr16LimitedCandTreeSet/candtreesanno>1pos+neg.rds")
+
+treeids <- sort(unique(names(partially_annotated)))
+
+data    <- vector("list", length(treeids))
+names(data) <- treeids
+for (tn in treeids) {
+
+  # Preparing annotations
+  tmp_trees <- partially_annotated[names(partially_annotated) == tn]
+  tmp_ann   <- lapply(tmp_trees, function(a) rbind(a$tip.annotation, a$node.annotation))
+  tmp_ann   <- do.call(cbind, tmp_ann)
+
+  # Creating the aphylo version
+  if (sum(names(partially_annotated) == tn) > 1)
+    adata_tm <- do.call(c, tmp_trees)
+  else
+    adata_tm <- tmp_trees[[1L]]
+
+  # Offspring -> parent, we need to add the root
+  tmp_tree  <- rbind(tmp_trees[[1]]$tree$edge[, 2:1], c(Ntip(tmp_trees[[1]]) + 1, -1))
+
+  # Sorting the annotations accordingly
+  tmp_ann <- tmp_ann[tmp_tree[,1],,drop=FALSE]
+  tmp_ann <- lapply(1:nrow(tmp_ann), function(i) tmp_ann[i ,])
+
+  # Computing polytomies
+  polyt <- table(table(tmp_tree[,2]))
+  polyt <- max(as.integer(names(polyt)))
+
+  data[[tn]] <- list(
+    edges = tmp_tree,
+    ann   = tmp_ann,
+    dpl   = with(tmp_trees[[1L]], c(tip.type, node.type))[tmp_tree[,1]] == 0L,
+    genes = with(tmp_trees[[1L]]$tree, c(tip.label, node.label))[tmp_tree[,1]],
+    tree  = adata_tm,
+    polytomies = polyt,
+    nfuns      = length(tmp_ann[[1]]),
+    max_size   = 2^(( polyt + 1 ) * length(tmp_ann[[1]]) )
+  )
 
 
-trees <- readRDS("data-raw/pthr16LimitedCandTreeSet/candtreesanno>1pos+neg.rds")
-
-for (i in 1:length(trees)) {
-
-  model1 <- aphylo_to_geese(trees[[i]])
-  parse_polytomies(model1)
-  term_overall_changes(model1, event_type = 2)
-  term_k_genes_changing(model1, 1, event_type = 2)
-  term_gains(model1, 0:1, event_type = 0)
-  term_gains(model1, 0:1, event_type = 1)
-  term_loss(model1, 0:1, event_type = 0)
-  term_loss(model1, 0:1, event_type = 1)
-
-  if (parse_polytomies(model1) > 10)
-    next
-
-  rule_limit_changes(model1, 0, lb = 0, ub = 4, event_type = 2)
-  stop()
 }
 
-
-init_model(model1)
-
-ans_mle  <- geese_mle(model1)
-ans_mcmc  <- geese_mcmc(
-  model1, nsteps=2000,
-  kernel = fmcmc::kernel_ram(
-    lb = -10, ub = 10, fixed = c(TRUE, rep(FALSE, 11))
-    )
-  )
-ans_pred <- predict_geese(model1, par = ans_mle$par, leave_one_out = TRUE, only_annotated = TRUE)
+saveRDS(data, file="data/curated_trees.rds")
