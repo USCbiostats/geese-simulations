@@ -10,6 +10,7 @@ names(dat) <- gsub(".+(PTHR[0-9]+).+", "\\1", fn)
 
 # Correcting AUCs aphylo
 dat <- lapply(dat, function(d) {
+
   if (!inherits(d$aphylo_auc, "aphylo_prediction_score")) {
 
     d$aphylo_auc <- aphylo::prediction_score(
@@ -20,6 +21,7 @@ dat <- lapply(dat, function(d) {
   }
 
   d
+
 })
 
 length(unlist(lapply(dat, function(d) as.vector(d$aphylo_auc$expected)[
@@ -83,3 +85,15 @@ aphylo_mae <- do.call(rbind, aphylo_mae)
 # Plotting ---------------------------------------------------------------------
 plot_mae(x = maes[,1], y = maes[,2], fn = "fig/mcmc-analysis-unif-prior-curated-mae.svg")
 plot_auc(x = geese_mae, y = aphylo_mae, fn = "fig/mcmc-analysis-unif-prior-curated-auc.svg")
+
+saveRDS(
+  list(
+    aucs   = aucs,
+    maes   = maes,
+    geese  = geese_mae,
+    aphylo = aphylo_mae,
+    raw    = dat
+  ),
+  file = "fig/mcmc-analysis-curated.rds"
+)
+

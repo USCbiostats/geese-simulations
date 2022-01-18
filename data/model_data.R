@@ -12,8 +12,9 @@ library(geese)
 library(coda)
 
 # Fitting partially annotated trees --------------------------------------------
-
-partially_annotated <- readRDS("data/candidate_trees.rds")
+partially_annotated <- readRDS(
+  "data-raw/pthr16LimitedCandTreeSet/candtreesanno_1pos+neg.rds"
+  )
 
 # Parsing the data
 treeids <- sort(unique(names(partially_annotated)))

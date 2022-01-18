@@ -6,23 +6,24 @@ library(coda)
 model_data <- readRDS("data/model_data.rds")
 NSTEPS     <- 2e4
 
-init <- c(
-  `Overall changes at duplication` = 0,
-  `Overall changes at speciation` = 0,
-  `Only one gene changes at duplication` = -.5,
-  `Only one gene changes at speciation` = -.5,
-  `Gains 0 at duplication` = 0.0768957326737147,
-  `Gains 0 at speciation` = -2.15269078801566,
-  `Loss 0 at speciation` = -3.42075856213656,
-  `Loss 0 at duplication` = -3.42075856213656,
-  `Root 1` = 1.64267185610882
-) * 0
+# init <- c(
+#   `Overall changes at duplication` = 0,
+#   `Overall changes at speciation` = 0,
+#   `Only one gene changes at duplication` = -.5,
+#   `Only one gene changes at speciation` = -.5,
+#   `Gains 0 at duplication` = 0.0768957326737147,
+#   `Gains 0 at speciation` = -2.15269078801566,
+#   `Loss 0 at speciation` = -3.42075856213656,
+#   `Loss 0 at duplication` = -3.42075856213656,
+#   `Root 1` = 1.64267185610882
+# ) * 0
 
 # Subsetting trees to obtain parameter estimates
 data_to_include <- which(
   (sapply(model_data, "[[", "max_size") < 1e9/2) &
     (sapply(model_data, "[[", "nfuns") == 1)
   )
+
 data_to_include <- names(model_data)[data_to_include]
 
 model2fit <- new_flock()
@@ -86,28 +87,33 @@ loc <- c(
   rep(0, nfunctions)
 )
 
-fn <- "parameter-estimates/mcmc-joint-geese-second-run.rds"
+fn <- "parameter-estimates/mcmc-joint-geese.rds"
 
 set.seed(1112)
-ans_geese_mcmc_no_prior <- geese_mcmc(
+ans_geese_mcmc <- geese_mcmc(
   model2fit,
-  initial = init,
-  prior  = function(p) 0,
-  nsteps = NSTEPS,
-  kernel = fmcmc::kernel_ram(
-    warmup = NSTEPS/10,
+  prior  = function(p) 0, # Uniform prior
+  nsteps = 20000, burnin = 0, thin = 1,
+  kernel = fmcmc::kernel_am(
+    warmup = 2e3,
     fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
-    lb     = -9,
-    ub     = 9
+    lb     = -10,
+    ub     = 10
   ))
 
+estimates_no_prior <- colMeans(
+  window(ans_geese_mcmc, start = NSTEPS * (4/5))
+  )
 
-estimates_no_prior <- colMeans(window(ans_geese_mcmc_no_prior, start = NSTEPS * (4/5)))
+pred_no_prior <- predict_flock(
+  p   = model2fit,
+  par = estimates_no_prior,
+  leave_one_out = TRUE
+  )
 
-pred_no_prior <- predict_flock(model2fit, estimates_no_prior, leave_one_out = TRUE)
 saveRDS(
   list(
-    mcmc = ans_geese_mcmc_no_prior,
+    mcmc = ans_geese_mcmc,
     pred = pred_no_prior,
     data = model_data[data_to_include]
   ),
