@@ -40,9 +40,7 @@ parse_polytomies(model2fit)
 # Building the model
 term_overall_changes(model2fit, duplication = TRUE)
 term_overall_changes(model2fit, duplication = FALSE)
-# term_genes_changing(model2fit, duplication = TRUE)
-# term_gains(model2fit, 0:(nfunctions - 1))
-# term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+
 term_loss(model2fit, 0:(nfunctions - 1))
 term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 term_k_genes_changing(model2fit, 1, TRUE)

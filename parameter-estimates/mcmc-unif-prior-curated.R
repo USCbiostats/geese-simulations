@@ -13,7 +13,7 @@ library(coda)
 
 # Fitting partially annotated trees --------------------------------------------
 
-partially_annotated <- readRDS("data-raw/pthr16LimitedCandTreeSet/candtreesanno>1pos+neg.rds")
+partially_annotated <- readRDS("data-raw/pthr16LimitedCandTreeSet/candtreesanno_1pos+neg.rds")
 
 # Parsing the data
 treeids <- sort(unique(names(partially_annotated)))
@@ -95,12 +95,15 @@ for (current_tree in colnames(data_features)) {
   parse_polytomies(model2fit)
 
   # Building the model
-  term_overall_changes(model2fit, duplication = TRUE)
-  term_overall_changes(model2fit, duplication = FALSE)
+  term_overall_changes(model2fit, duplication = TRUE)  # Just constrain support
+  term_overall_changes(model2fit, duplication = FALSE) # Just constrain support
+
   term_gains(model2fit, 0:(nfunctions - 1))
   term_gains(model2fit, 0:(nfunctions - 1), FALSE)
   term_loss(model2fit, 0:(nfunctions - 1))
   term_loss(model2fit, 0:(nfunctions - 1), FALSE)
+
+  # Indicator variable (this makes the difference)
   term_k_genes_changing(model2fit, 1, TRUE)
   term_k_genes_changing(model2fit, 1, FALSE)
 
