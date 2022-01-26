@@ -1,7 +1,7 @@
 .PHONY: mcmc joint analysis-mcmc
-mcmc-joint-geese: parameter-estimates/mcmc-joint-geese.R
-	R CMD BATCH --vanilla parameter-estimates/mcmc-joint-geese.R \
-		parameter-estimates/mcmc-joint-geese.Rout &
+mcmc-joint-geese-ver2: parameter-estimates/mcmc-joint-geese-ver2.R
+	R CMD BATCH --vanilla parameter-estimates/mcmc-joint-geese-ver2.R \
+		parameter-estimates/mcmc-joint-geese-ver2.Rout &
 
 mcmc-joint-aphylo: parameter-estimates/mcmc-joint-aphylo.R
 	R CMD BATCH --vanilla parameter-estimates/mcmc-joint-aphylo.R \

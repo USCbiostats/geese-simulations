@@ -84,7 +84,7 @@ aphylo_mae <- do.call(rbind, aphylo_mae)
 
 # Plotting ---------------------------------------------------------------------
 plot_mae(x = maes[,1], y = maes[,2], fn = "fig/mcmc-analysis-unif-prior-curated-mae.svg")
-plot_auc(x = geese_mae, y = aphylo_mae, fn = "fig/mcmc-analysis-unif-prior-curated-auc.svg")
+plot_auc(x = geese_mae, y = aphylo_mae, fn = "fig/mcmc-analysis-unif-prior-curated-auc.svg", width = 5.5, height = 5.5)
 
 saveRDS(
   list(

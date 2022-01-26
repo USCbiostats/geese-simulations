@@ -4,7 +4,7 @@ library(coda)
 
 # Fitting partially annotated trees --------------------------------------------
 model_data <- readRDS("data/model_data.rds")
-NSTEPS     <- 2e4
+NSTEPS     <- 4e4
 
 # init <- c(
 #   `Overall changes at duplication` = 0,
@@ -93,9 +93,9 @@ set.seed(1112)
 ans_geese_mcmc <- geese_mcmc(
   model2fit,
   prior  = function(p) 0, # Uniform prior
-  nsteps = 20000, burnin = 0, thin = 1,
-  kernel = fmcmc::kernel_am(
-    warmup = 2e3,
+  nsteps = NSTEPS, burnin = 0, thin = 1,
+  kernel = fmcmc::kernel_ram(
+    warmup = NSTEPS/10,
     fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
     lb     = -10,
     ub     = 10
@@ -119,9 +119,4 @@ saveRDS(
   ),
   file = fn
   )
-
-
-
-
-
 

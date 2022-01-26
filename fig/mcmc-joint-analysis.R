@@ -6,6 +6,7 @@ source("fig/plot_functions.R")
 # dat <- readRDS("parameter-estimates/mcmc-joint.rds")
 
 dat_geese    <- readRDS("parameter-estimates/mcmc-joint-geese.rds")
+dat_geese_v2 <- readRDS("parameter-estimates/mcmc-joint-geese-ver3.rds")
 dat_aphylo   <- readRDS("parameter-estimates/mcmc-joint-aphylo.rds")
 
 # Geese scores -----------------------------------------------------------------
@@ -25,6 +26,24 @@ overall_auc_geese <- prediction_score(
 mae_geese <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d)),
     p = pred_geese, d = dat_labs)
 mae_geese <- sapply(mae_geese, function(x) 1 - x$obs)
+
+# Geese 2 scores ---------------------------------------------------------------
+
+# With prior
+pred_geese2 <- dat_geese_v2$pred
+pred_geese2 <- lapply(pred_geese2, do.call, what=rbind)
+
+dat_labs   <- lapply(dat_geese_v2$data, "[[", "ann")
+dat_labs   <- lapply(dat_labs, do.call, what=rbind)
+
+overall_auc_geese2 <- prediction_score(
+  x        = do.call(rbind, pred_geese2),
+  expected = do.call(rbind, dat_labs)
+)
+
+mae_geese2 <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d)),
+                 p = pred_geese2, d = dat_labs)
+mae_geese2 <- sapply(mae_geese2, function(x) 1 - x$obs)
 
 
 # Aphylo scores -----------------------------------------------------------------
@@ -156,5 +175,33 @@ prediction_score(dat_unpooled_geese[,1,drop=FALSE],  dat_unpooled_geese[,2,drop=
 dat_unpooled_aphylo <- do.call(rbind, dat_unpooled_aphylo)
 prediction_score(dat_unpooled_aphylo[,1,drop=FALSE],  dat_unpooled_aphylo[,2,drop=FALSE])
 
-# Preparing table
+# Dist of MAE aphylo pooled vs non-pooled:
+mae_unpooled <- sapply(dat_unpooled[used_trees], \(d) 1 - d$aphylo_auc$obs)
+mae_pooled   <- sapply(dat_aphylo$pred, \(d) 1 - d$obs)
 
+ttest_results <- t.test(mae_unpooled - mae_pooled)
+
+graphics.off()
+pdf("fig/mcmc-joint-analysis-mae-aphylo-pooled-vs-nopooled.pdf", width = 5, height = 3.5)
+op <- par(mai = par("mai") * c(1,1,.5,1) * .8, cex = .9)
+boxplot(cbind(
+  "(a) Individual\nEstimates" = mae_unpooled,
+  "(b) Pooled\nEstimates"      = mae_pooled
+  ),
+  xlab = "Mean Absolute Error [MAE]",
+  horizontal = TRUE
+  )
+
+legend(
+  "bottomleft",
+  legend = c(
+    "95% C.I. paired t-test",
+    sprintf(
+      "(a) -- (b) : [%.2f, %.2f]",
+      ttest_results$conf.int[1],
+      ttest_results$conf.int[2]
+    )),
+  bty = "n"
+)
+par(op)
+dev.off()
