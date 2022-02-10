@@ -119,17 +119,17 @@ dev.off()
 # Parameter estimates ----------------------------------------------------------
 
 # With prior
-dat <- dat_geese
+dat <- dat_geese_v2
 table_ <- data.frame(
   `Mean (Sd)` =
     sprintf(
       "%.2f (%.2f)",
-      colMeans(window(dat$mcmc[,-c(1:2)], start=15000)),
-      sqrt(diag(cov(window(dat$mcmc[,-c(1:2)], start=15000))))
+      colMeans(window(dat$mcmc[,-c(1:2)], start=35000)),
+      sqrt(diag(cov(window(dat$mcmc[,-c(1:2)], start=35000))))
     ), check.names = FALSE
   )
 
-table_$`Credible Interval` <- apply(window(dat$mcmc[,-c(1:2)], start=15000), 2, function(x) {
+table_$`Credible Interval` <- apply(window(dat$mcmc[,-c(1:2)], start=35000), 2, function(x) {
 
   q <- quantile(x, probs = c(.025, .975))
   sprintf("[%.02f, %.02f]", q[1], q[2])

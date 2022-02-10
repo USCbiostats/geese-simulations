@@ -61,6 +61,55 @@ loc <- c(
   rep(0, nfunctions)
   )
 
+# MCMC analysis ----------------------------------------------------------------
+graphics.off()
+pdf("fig/mcmc-analysis-curated-traceplots.pdf")
+for (n in names(dat)) {
+  traceplots(
+    dat[[n]]$geese_mcmc[,-c(1,2)], col = adjustcolor("black", alpha.f = .5),
+    smooth = TRUE
+    )
+  title(n)
+}
+dev.off()
+
+estimates <- lapply(dat, \(x) colMeans(window(x$geese_mcmc, start = 15000)))
+
+# Single function
+estimates_1 <- do.call(rbind, estimates[sapply(estimates, length) == 9])[,-c(1,2)]
+View(estimates_1[estimates_1[,1] > estimates_1[,2],])
+
+window(dat$PTHR11575$geese_mcmc, start = 15000)[,-c(1,2)] |>
+  apply(2, quantile, probs = c(.025, .975)) |>
+  t()
+
+# Two functions
+estimates_2 <- do.call(rbind, estimates[sapply(estimates, length) == 14])[,-c(1,2)]
+View(estimates_2[estimates_2[,1] > estimates_2[,3],])
+
+window(dat$PTHR19443$geese_mcmc, start = 15000)[,-c(1,2)] |>
+  apply(2, quantile, probs = c(.025, .5, .975)) |>
+  t()
+
+traceplots(
+  dat[["PTHR19443"]]$geese_mcmc[,-c(1,2)], col = adjustcolor("black", alpha.f = .5),
+  smooth = TRUE
+)
+
+# Three functions
+estimates_3 <- do.call(rbind, estimates[sapply(estimates, length) == 19])[,-c(1,2),drop=FALSE]
+View(estimates_3)
+
+window(dat$PTHR10024$geese_mcmc, start = 15000)[,-c(1,2)] |>
+  apply(2, quantile, probs = c(.025, .5, .975)) |>
+  t()
+
+traceplots(
+  dat[["PTHR10024"]]$geese_mcmc[,-c(1,2)], col = adjustcolor("black", alpha.f = .5),
+  smooth = TRUE
+)
+
+
 # Overall MAEs -----------------------------------------------------------------
 geese_mae <- lapply(dat, function(d) {
   with(d$geese_auc, cbind(predicted, expected))

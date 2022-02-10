@@ -1,41 +1,60 @@
 library(geese)
+source("fig/plot_functions.R")
+
+chains <- readRDS("parameter-estimates/mcmc-joint-geese-ver3.rds")
+window(chains$mcmc[,-c(1,2)], start = end(chains$mcmc)*4/5) |>
+  apply(2, quantile, probs = c(.025, .5, .975)) |>
+  t()
+
+# estimates <- window(chains$mcmc[,-c(1,2)], start = end(chains$mcmc)*4/5) |> colMeans()
+estimates <- c(`Overall changes at duplication` = 0, `Overall changes at speciation` = 0,
+               `Pairs of genes changing at duplication` = 1.07218091088764,
+               `Pairs of genes changing at speciation` = 1.72931677452398, `Overall gains at duplication` = 2.24418138977199,
+               `Overall gains at speciation` = 1.97323673341573, `Overall loses at duplication` = -3.32099148878171,
+               `Overall loses at speciation` = 0.0300813296176934, `Root 1` = 0.0967000679510709,
+               `Root 2` = 0.45371292244021)
+# estimates[1:2] <- 0
+
+traceplots(chains$mcmc[,-c(1,2)])
 
 # Building the model
-model2fit <- new_flock()
+model2fit_odds <- new_flock()
 add_geese(
-  p           = model2fit,
-  annotations = list(0,0,0),
+  p           = model2fit_odds,
+  annotations = list(c(0,0),c(0,0),c(0,0)),
   geneid      = c(0,1,2),
   parent      = c(-1,0,0),
   duplication = c(TRUE, TRUE, TRUE)
   )
 
 add_geese(
-  p           = model2fit,
-  annotations = list(0,0,0),
+  p           = model2fit_odds,
+  annotations = list(c(0,0),c(0,0),c(0,0)),
   geneid      = c(0,1,2),
   parent      = c(-1,0,0),
   duplication = !c(TRUE, TRUE, TRUE)
 )
 
-nfunctions <- 1L
-# Building the model
-term_overall_changes(model2fit, duplication = TRUE)  # Just constrain support
-term_overall_changes(model2fit, duplication = FALSE) # Just constrain support
+term_overall_changes(model2fit_odds, duplication = TRUE)
+term_overall_changes(model2fit_odds, duplication = FALSE)
 
-term_gains(model2fit, 0:(nfunctions - 1))
-term_gains(model2fit, 0:(nfunctions - 1), FALSE)
-term_loss(model2fit, 0:(nfunctions - 1))
-term_loss(model2fit, 0:(nfunctions - 1), FALSE)
+term_pairwise_overall_change(model2fit_odds, duplication = 1)
+term_pairwise_overall_change(model2fit_odds, duplication = 0)
 
-# Indicator variable (this makes the difference)
-term_k_genes_changing(model2fit, 1, TRUE)
-term_k_genes_changing(model2fit, 1, FALSE)
+term_overall_gains(model2fit_odds, 1)
+term_overall_gains(model2fit_odds, 0)
 
-rule_limit_changes(model2fit, 0, 0, 4, TRUE)
-rule_limit_changes(model2fit, 1, 0, 4, FALSE)
+term_overall_loss(model2fit_odds, 1)
+term_overall_loss(model2fit_odds, 0)
 
-init_model(model2fit)
+rule_limit_changes(model2fit_odds, 0, 0, 4, TRUE)
+rule_limit_changes(model2fit_odds, 1, 0, 4, FALSE)
+
+
+init_model(model2fit_odds)
+ans <- get_support(model2fit_odds)
+ans <- do.call(rbind, ans)
+View(ans)
 
 # dat_geese_prior <- readRDS("parameter-estimates/mcmc-joint-geese.rds")
 # colMeans(window(dat_geese_prior$mcmc, start = 15000))
@@ -63,94 +82,82 @@ init_model(model2fit)
 #   `Root 1` = 6.41661903218071
 # )
 
-coefs <-
-  c(
-    `Overall changes at duplication` = 0,
-    `Overall changes at speciation` = 0,
-    `Only one gene changes at duplication` = -3.55887539187092,
-    `Only one gene changes at speciation` = -2.45449172285053,
-    `Gains 0 at duplication` = -0.433510761662447,
-    `Gains 0 at speciation` = -4.10433924593962,
-    `Loss 0 at duplication` = -1.78618476204973,
-    `Loss 0 at speciation` = -5.68332000654832,
-    `Root 1` = 6.29080043699408
-  )
-
+coefs <- estimates # c(0,0, estimates)
 # Case 1: Moving from no function to both having a function
 
 # Both gain
 transition_prob( # Duplication
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = TRUE,
-  params      = coefs[-9],
-  state       = FALSE,
-  array       = matrix(c(1,1), nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(FALSE, nfunctions),
+  array       = matrix(rep(c(1,0), nfunctions), byrow = FALSE, nrow = nfunctions),
   as_log = FALSE
 )
 
 transition_prob( # Speciation
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = FALSE,
-  params      = coefs[-9],
-  state       = FALSE,
-  array       = matrix(c(1,1), nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(FALSE, nfunctions),
+  array       = matrix(rep(c(1,0), nfunctions), byrow = FALSE, nrow = nfunctions),
   as_log = FALSE
 )
 
 # Only one gain
 transition_prob( # Duplication
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = TRUE,
-  params      = coefs[-9],
-  state       = FALSE,
-  array       = matrix(c(0,1), nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(FALSE, nfunctions),
+  array       = matrix(c(1,rep(0, nfunctions * 2 - 1)), nrow = nfunctions),
   as_log = FALSE
 )
 
 transition_prob( # Speciation
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = FALSE,
-  params      = coefs[-9],
-  state       = FALSE,
-  array       = matrix(c(0,1), nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(FALSE, nfunctions),
+  array       = matrix(c(1,rep(0, nfunctions * 2 - 1)), nrow = nfunctions),
   as_log = FALSE
 )
 
 # Either gain
 1 - transition_prob( # Duplication
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = TRUE,
-  params      = coefs[-9],
-  state       = FALSE,
-  array       = matrix(c(0,0), nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(FALSE, nfunctions),
+  array       = matrix(rep(0, nfunctions * 2), nrow = nfunctions),
   as_log = FALSE
 )
 
 1 - transition_prob( # Speciation
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = FALSE,
-  params      = coefs[-9],
-  state       = FALSE,
-  array       = matrix(c(0,0), nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(FALSE, nfunctions),
+  array       = matrix(rep(0, nfunctions * 2), nrow = nfunctions),
   as_log = FALSE
 )
 
 # Both lose the function
 transition_prob( # Duplication
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = TRUE,
-  params      = coefs[-9],
-  state       = TRUE,
-  array       = matrix(c(1,1)*0, nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(TRUE, nfunctions),
+  array       = matrix(rep(0, nfunctions * 2), nrow = nfunctions),
   as_log = FALSE
 )
 
 transition_prob( # Speciation
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = FALSE,
-  params      = coefs[-9],
-  state       = TRUE,
-  array       = matrix(c(1,1)*0, nrow = 1),
+  params      = coefs[-((length(estimates)-(nfunctions-1)):length(estimates))],
+  state       = rep(TRUE, nfunctions),
+  array       = matrix(rep(0, nfunctions * 2), nrow = nfunctions),
   as_log = FALSE
 )
 
@@ -158,17 +165,17 @@ transition_prob( # Speciation
 
 # Duplication
 conditional_prob(
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = TRUE,
   params      = coefs[-9],
   state       = FALSE,
-  array       = matrix(c(0,0), nrow = 1),
+  array       = matrix(c(1,0), nrow = 1),
   i = 0, j = 1
 )
 
 # Speciation
 conditional_prob(
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = FALSE,
   params      = coefs[-9],
   state       = FALSE,
@@ -176,21 +183,21 @@ conditional_prob(
   i = 0, j = 0
 )
 
-# Case 3: Preserve a one given sib does
+# Case 3: Preserve a zero given sib gained
 
 # Duplication
 conditional_prob(
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = TRUE,
   params      = coefs[-9],
-  state       = TRUE,
+  state       = FALSE,
   array       = matrix(c(1,1), nrow = 1),
   i = 0, j = 0
 )
 
 # Speciation
 conditional_prob(
-  p           = model2fit,
+  p           = model2fit_odds,
   duplication = FALSE,
   params      = coefs[-9],
   state       = TRUE,

@@ -7,6 +7,12 @@ mcmc-joint-aphylo: parameter-estimates/mcmc-joint-aphylo.R
 	R CMD BATCH --vanilla parameter-estimates/mcmc-joint-aphylo.R \
 		parameter-estimates/mcmc-joint-aphylo.Rout &
 
+mcmc-unif-prior-curated: parameter-estimates/mcmc-unif-prior-curated.R
+	R CMD BATCH --vanilla parameter-estimates/mcmc-unif-prior-curated.R \
+		parameter-estimates/mcmc-unif-prior-curated-v2.Rout &
+
+
+
 # analysis-mcmc:
 # 	Rscript --vanilla -e \
 # 		'source("fig/mcmc-analysis.R", echo = TRUE)'

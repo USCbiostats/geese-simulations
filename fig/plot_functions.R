@@ -54,3 +54,23 @@ plot_mae <- function(x, y, fn, xlab. = "GEESE", ylab. = "aphylo", main. = "MAE p
   par(op)
   dev.off()
 }
+
+
+traceplots <- function(dat, ylim = c(-10,10), hlines = NULL, ...) {
+  k <- ncol(dat)
+
+  op <- par(mfrow = c(ceiling(k/3), 3), mar = c(2.5, 2.5, .5, .5))
+  for (i in 1:ncol(dat)) {
+    coda::traceplot(dat[,i,drop=FALSE], ylim = ylim, main = "", ...)
+    abline(h = 0, lwd = 1.5, lty = 2, col = "tomato")
+    legend("topleft", legend = colnames(dat)[i], bt = "n")
+    if (length(hlines)) {
+      abline(h = hlines[i], lty = 3, col = "steelblue")
+      text(x = 0, y = hlines[i], labels = "prior")
+    }
+
+  }
+
+  par(op)
+
+}
