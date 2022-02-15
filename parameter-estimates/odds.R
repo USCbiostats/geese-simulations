@@ -8,11 +8,11 @@ window(chains$mcmc[,-c(1,2)], start = end(chains$mcmc)*4/5) |>
 
 # estimates <- window(chains$mcmc[,-c(1,2)], start = end(chains$mcmc)*4/5) |> colMeans()
 estimates <- c(`Overall changes at duplication` = 0, `Overall changes at speciation` = 0,
-               `Pairs of genes changing at duplication` = 1.07218091088764,
-               `Pairs of genes changing at speciation` = 1.72931677452398, `Overall gains at duplication` = 2.24418138977199,
-               `Overall gains at speciation` = 1.97323673341573, `Overall loses at duplication` = -3.32099148878171,
-               `Overall loses at speciation` = 0.0300813296176934, `Root 1` = 0.0967000679510709,
-               `Root 2` = 0.45371292244021)
+               `Pairs of genes changing at duplication` = 0.43871824158507,
+               `Pairs of genes changing at speciation` = -0.474759990717598,
+               `Overall gains at duplication` = -1.47588517867656, `Overall gains at speciation` = -3.43602984827269,
+               `Overall loses at duplication` = -2.026463510682, `Overall loses at speciation` = -3.89267327124028,
+               `Root 1` = 2.39377623486206)
 # estimates[1:2] <- 0
 
 traceplots(chains$mcmc[,-c(1,2)])

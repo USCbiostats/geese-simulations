@@ -11,7 +11,7 @@ NSTEPS     <- 4e4/2
 data_to_include <- which(
   (sapply(model_data, "[[", "max_size") < 1e8) &
   # (sapply(model_data, "[[", "polytomies") <= 25) &
-    (sapply(model_data, "[[", "nfuns") == 2)
+    (sapply(model_data, "[[", "nfuns") == 1)
   )
 length(data_to_include)
 
@@ -38,7 +38,7 @@ for (i in data_to_include) {
 ################################################################################
 
 # Building the model
-nfunctions <- 2
+nfunctions <- 1
 
 # Checkingout number of polytomies
 polytoms <- parse_polytomies(model2fit)
