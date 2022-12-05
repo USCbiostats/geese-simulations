@@ -1,6 +1,6 @@
 #' @param x,y Objects of class `aphylo_prediction_score`.
 #' @param fn Name of the file where to save the svg figure
-plot_auc <- function(x, y, fn, ...) {
+plot_auc <- function(x, y, fn, title_args = list(), ...) {
 
   graphics.off()
   svg(fn, ...)
@@ -31,6 +31,9 @@ plot_auc <- function(x, y, fn, ...) {
     lty    = c(NA, 1:2),
     bt     = "n"
   )
+
+  if (length(title_args))
+    do.call(graphics::title, title_args)
 
   dev.off()
 }

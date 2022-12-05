@@ -47,10 +47,18 @@ ggplot(scores, aes(x = mae_geese - mae_aphylo)) +
   geom_vline(xintercept = 0, lwd = 1, lty = 2) +
   labs(x = expression(MAE[GEESE] - MAE[aphylo]), y = "Frequency") +
   theme(text = element_text(size = 12))
-ggsave("simulations/simulation-study-analyzer.pdf", width = 3.5, height = 3.5)
+ggsave("simulations/simulation-study-analyzer.pdf", width = 4, height = 2.5)
 
-with(scores, t.test(mae_geese, mae_aphylo))
-with(scores, t.test(auc_geese, auc_aphylo))
+with(scores, hist(mae_geese- mae_aphylo, breaks = 300))
+with(scores, t.test(mae_geese, mae_aphylo, paired = TRUE))
+with(scores, quantile(mae_geese - mae_aphylo, probs = c(.025,.975)))
+scores[, quantile(mae_geese - mae_aphylo, probs = c(.025, .975))]
+
+scores[, sd(mae_geese - mae_aphylo)]
+
+N <- nrow(scores)
+scores[, wilcox.test(mae_geese, mae_aphylo)]
+
 
 scores[order(auc_geese - auc_aphylo)][,plot(auc_geese-auc_aphylo, type = "l")]
 abline(h = 0)
