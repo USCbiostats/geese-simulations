@@ -5,11 +5,21 @@ source("fig/plot_functions.R")
 # Reading the parameter estimates
 # dat <- readRDS("parameter-estimates/mcmc-joint.rds")
 
-dat_geese    <- readRDS("parameter-estimates/mcmc-joint-geese.rds")
-dat_geese_v2 <- readRDS("parameter-estimates/mcmc-joint-geese-ver3.rds")
+# dat_geese    <- readRDS("parameter-estimates/mcmc-joint-geese.rds")
+dat_geese <- readRDS("parameter-estimates/mcmc-joint-geese-ver3.rds")
 dat_aphylo   <- readRDS("parameter-estimates/mcmc-joint-aphylo.rds")
 
-# Geese scores -----------------------------------------------------------------
+# Filtering out
+common_sets <- intersect(names(dat_aphylo$data), names(dat_geese$data))
+dat_geese$mcmc <- dat_geese$mcmc[names(dat_geese$data) %in% common_sets]
+dat_geese$pred <- dat_geese$pred[names(dat_geese$data) %in% common_sets]
+dat_geese$data <- dat_geese$data[names(dat_geese$data) %in% common_sets]
+
+dat_aphylo$mcmc <- dat_aphylo$mcmc[names(dat_aphylo$data) %in% common_sets]
+dat_aphylo$pred <- dat_aphylo$pred[names(dat_aphylo$data) %in% common_sets]
+dat_aphylo$data <- dat_aphylo$data[names(dat_aphylo$data) %in% common_sets]
+
+# Geese 2 scores ---------------------------------------------------------------
 
 # With prior
 pred_geese <- dat_geese$pred
@@ -21,29 +31,11 @@ dat_labs   <- lapply(dat_labs, do.call, what=rbind)
 overall_auc_geese <- prediction_score(
   x        = do.call(rbind, pred_geese),
   expected = do.call(rbind, dat_labs)
-  )
-
-mae_geese <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d)),
-    p = pred_geese, d = dat_labs)
-mae_geese <- sapply(mae_geese, function(x) 1 - x$obs)
-
-# Geese 2 scores ---------------------------------------------------------------
-
-# With prior
-pred_geese2 <- dat_geese_v2$pred
-pred_geese2 <- lapply(pred_geese2, do.call, what=rbind)
-
-dat_labs   <- lapply(dat_geese_v2$data, "[[", "ann")
-dat_labs   <- lapply(dat_labs, do.call, what=rbind)
-
-overall_auc_geese2 <- prediction_score(
-  x        = do.call(rbind, pred_geese2),
-  expected = do.call(rbind, dat_labs)
 )
 
-mae_geese2 <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d)),
-                 p = pred_geese2, d = dat_labs)
-mae_geese2 <- sapply(mae_geese2, function(x) 1 - x$obs)
+mae_geese <- Map(function(p,d) prediction_score(x = cbind(p), expected = cbind(d)),
+                 p = pred_geese, d = dat_labs)
+mae_geese <- sapply(mae_geese, function(x) 1 - x$obs)
 
 
 # Aphylo scores -----------------------------------------------------------------
@@ -124,12 +116,12 @@ table_ <- data.frame(
   `Mean (Sd)` =
     sprintf(
       "%.2f (%.2f)",
-      colMeans(window(dat$mcmc[,-c(1:2)], start=35000)),
-      sqrt(diag(cov(window(dat$mcmc[,-c(1:2)], start=35000))))
+      colMeans(window(dat$mcmc[,-c(1:2)], start=10000)),
+      sqrt(diag(cov(window(dat$mcmc[,-c(1:2)], start=10000))))
     ), check.names = FALSE
   )
 
-table_$`Credible Interval` <- apply(window(dat$mcmc[,-c(1:2)], start=35000), 2, function(x) {
+table_$`Credible Interval` <- apply(window(dat$mcmc[,-c(1:2)], start=10000), 2, function(x) {
 
   q <- quantile(x, probs = c(.025, .975))
   sprintf("[%.02f, %.02f]", q[1], q[2])

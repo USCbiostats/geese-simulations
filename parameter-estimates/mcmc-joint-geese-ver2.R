@@ -44,20 +44,33 @@ nfunctions <- 1
 polytoms <- parse_polytomies(model2fit)
 
 # Building the model
-term_overall_changes(model2fit, duplication = TRUE)
-term_overall_changes(model2fit, duplication = FALSE)
+term_overall_changes(model2fit, duplication = TRUE)  # Just constrain support
+term_overall_changes(model2fit, duplication = FALSE) # Just constrain support
 
-term_pairwise_overall_change(model2fit, duplication = 1)
-term_pairwise_overall_change(model2fit, duplication = 0)
+term_gains(model2fit, 0:(nfunctions - 1))
+term_gains(model2fit, 0:(nfunctions - 1), FALSE)
+term_loss(model2fit, 0:(nfunctions - 1))
+term_loss(model2fit, 0:(nfunctions - 1), FALSE)
 
-term_overall_gains(model2fit, 1)
-term_overall_gains(model2fit, 0)
-
-term_overall_loss(model2fit, 1)
-term_overall_loss(model2fit, 0)
+# Indicator variable (this makes the difference)
+term_k_genes_changing(model2fit, 1, TRUE)
+term_k_genes_changing(model2fit, 1, FALSE)
 
 rule_limit_changes(model2fit, 0, 0, 4, TRUE)
 rule_limit_changes(model2fit, 1, 0, 4, FALSE)
+
+loc <- c(
+  # Overall changes
+  0, 0,
+  # Genes changing at duplication
+  # -1/2,
+  # Gains and loss x nfunctions (duplication)
+  rep(1/2, nfunctions), rep(-1/2, nfunctions),
+  # Gains and loss x nfunctions (speciation)
+  rep(-1/2, nfunctions), rep(-1/2, nfunctions),
+  c(1/2, 1/2)
+)
+
 
 time0 <- proc.time()
 
@@ -72,27 +85,23 @@ cor(support[,-c(1:3)])
 
 print(model2fit)
 
-set.seed(112)
-
-fn <- "parameter-estimates/mcmc-joint-geese-ver3.rds"
+fn <- "parameter-estimates/mcmc-joint-geese.rds"
 
 set.seed(1112)
 ans_geese_mcmc <- geese_mcmc(
   model2fit,
-  prior  = function(p) {
-    dnorm(p[-c(1,2)], sd = 2, mean = c(.5, .5, .5, .5, -.5, -.5, -.5, 0, 0) * 0, log = TRUE) # mean = c(1,1,-1,-1,-1,-1,0)*0, log = TRUE)
-    }, # Uniform prior
-  nsteps = NSTEPS, burnin = 0, thin = 1,
-  kernel = fmcmc::kernel_ram(
-    warmup = NSTEPS/10,
+  prior  = function(p) dnorm(p, sd = 2, log = TRUE), # Uniform prior
+  nsteps = 20000, burnin = 0, thin = 1,
+  kernel = fmcmc::kernel_am(
+    warmup = 2e3,
     fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
     lb     = -10,
     ub     = 10
-  ))
+))
 time1 <- proc.time()
 time1 - time0
 
-traceplots(ans_geese_mcmc[,-c(1,2)]) #, hlines = c(1,1,-1,-1,-1,-1,0))
+traceplots(ans_geese_mcmc[,]) #, hlines = c(1,1,-1,-1,-1,-1,0))
 
 window(ans_geese_mcmc[,-c(1,2)], start = end(ans_geese_mcmc)*4/5) |>
   apply(2, quantile, probs = c(.025, .5, .975)) |>
