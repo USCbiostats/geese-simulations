@@ -6,18 +6,8 @@ source("fig/plot_functions.R")
 # dat <- readRDS("parameter-estimates/mcmc-joint.rds")
 
 # dat_geese    <- readRDS("parameter-estimates/mcmc-joint-geese.rds")
-dat_geese <- readRDS("parameter-estimates/mcmc-joint-geese-ver3.rds")
+dat_geese <- readRDS("parameter-estimates/mcmc-joint-geese.rds")
 dat_aphylo   <- readRDS("parameter-estimates/mcmc-joint-aphylo.rds")
-
-# Filtering out
-common_sets <- intersect(names(dat_aphylo$data), names(dat_geese$data))
-dat_geese$mcmc <- dat_geese$mcmc[names(dat_geese$data) %in% common_sets]
-dat_geese$pred <- dat_geese$pred[names(dat_geese$data) %in% common_sets]
-dat_geese$data <- dat_geese$data[names(dat_geese$data) %in% common_sets]
-
-dat_aphylo$mcmc <- dat_aphylo$mcmc[names(dat_aphylo$data) %in% common_sets]
-dat_aphylo$pred <- dat_aphylo$pred[names(dat_aphylo$data) %in% common_sets]
-dat_aphylo$data <- dat_aphylo$data[names(dat_aphylo$data) %in% common_sets]
 
 # Geese 2 scores ---------------------------------------------------------------
 
@@ -111,7 +101,7 @@ dev.off()
 # Parameter estimates ----------------------------------------------------------
 
 # With prior
-dat <- dat_geese_v2
+dat <- dat_geese
 table_ <- data.frame(
   `Mean (Sd)` =
     sprintf(
