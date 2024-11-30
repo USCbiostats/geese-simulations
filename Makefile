@@ -28,3 +28,11 @@ mcmc-unif-prior-curated: parameter-estimates/mcmc-unif-prior-curated.R
 ls:
 	ls -alt parameter-estimates/mcmc-PTH*.rds | wc -l ; \
 		ls -alt parameter-estimates/mcmc-unif*.rds | wc -l
+
+image:
+	podman build -t geese-simulations:latest -f Containerfile
+
+interactive:
+	podman run -it --rm --mount \
+		type=bind,source=$(PWD),target=/geese-simulations \
+		-w /geese-simulations geese-simulations:latest 
