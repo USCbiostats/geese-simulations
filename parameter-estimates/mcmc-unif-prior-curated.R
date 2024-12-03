@@ -80,6 +80,7 @@ for (current_tree in colnames(data_features)) {
   fn <- sprintf("parameter-estimates/mcmc-unif-prior-curated-%s.rds", current_tree)
   if (file.exists(fn)) {
     message("This tree was already analyzed...")
+    next
   }
 
   model2fit <- with(data[[ current_tree ]], new_geese(

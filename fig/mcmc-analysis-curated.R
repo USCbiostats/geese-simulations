@@ -77,7 +77,9 @@ estimates <- lapply(dat, \(x) colMeans(window(x$geese_mcmc, start = 15000)))
 
 # Single function
 estimates_1 <- do.call(rbind, estimates[sapply(estimates, length) == 9])[,-c(1,2)]
-View(estimates_1[estimates_1[,1] > estimates_1[,2],])
+
+if (interactive())
+  View(estimates_1[estimates_1[,1] > estimates_1[,2],])
 
 window(dat$PTHR11575$geese_mcmc, start = 15000)[,-c(1,2)] |>
   apply(2, quantile, probs = c(.025, .975)) |>
@@ -85,7 +87,9 @@ window(dat$PTHR11575$geese_mcmc, start = 15000)[,-c(1,2)] |>
 
 # Two functions
 estimates_2 <- do.call(rbind, estimates[sapply(estimates, length) == 14])[,-c(1,2)]
-View(estimates_2[estimates_2[,1] > estimates_2[,3],])
+
+if (interactive())
+  View(estimates_2[estimates_2[,1] > estimates_2[,3],])
 
 window(dat$PTHR19443$geese_mcmc, start = 15000)[,-c(1,2)] |>
   apply(2, quantile, probs = c(.025, .5, .975)) |>
@@ -98,7 +102,9 @@ traceplots(
 
 # Three functions
 estimates_3 <- do.call(rbind, estimates[sapply(estimates, length) == 19])[,-c(1,2),drop=FALSE]
-View(estimates_3)
+
+if (interactive())
+  View(estimates_3)
 
 window(dat$PTHR10024$geese_mcmc, start = 15000)[,-c(1,2)] |>
   apply(2, quantile, probs = c(.025, .5, .975)) |>
