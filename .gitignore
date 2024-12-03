@@ -1,3 +1,7 @@
 *.log
 .Rproj.user
 *.rds
+*.Rhistory
+Rplots.pdf
+.RData
+*.Rout
