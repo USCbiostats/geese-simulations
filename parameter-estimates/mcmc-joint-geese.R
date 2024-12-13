@@ -79,7 +79,7 @@ time0 <- proc.time()
 # which the computer cannot handle, unless using restrictions.
 init_model(model2fit)
 
-View(support <- do.call(rbind, get_support(model2fit)))
+head(support <- do.call(rbind, get_support(model2fit)), 50)
 cor(support[,-c(1:3)])
 
 
@@ -114,7 +114,8 @@ estimates_no_prior <- colMeans(
 pred_no_prior <- predict_flock(
   p   = model2fit,
   par = estimates_no_prior,
-  leave_one_out = TRUE, only_annotated = TRUE
+  leave_one_out = TRUE,
+  only_annotated = TRUE
   )
 
 (pscores <- Map(

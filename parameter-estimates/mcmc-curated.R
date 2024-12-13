@@ -13,7 +13,9 @@ library(coda)
 
 # Fitting partially annotated trees --------------------------------------------
 
-partially_annotated <- readRDS("data-raw/pthr16LimitedCandTreeSet/candtreesanno_1pos+neg.rds")
+partially_annotated <- readRDS(
+  "data-raw/pthr16LimitedCandTreeSet/candtreesanno_1pos+neg.rds"
+  )
 
 # Parsing the data
 treeids <- sort(unique(names(partially_annotated)))
@@ -77,7 +79,7 @@ for (current_tree in colnames(data_features)) {
   message(paste(rep("#", options("width")), collapse = ""))
 
   # Checking if tree was already analyzed
-  fn <- sprintf("parameter-estimates/mcmc-unif-prior-curated-%s.rds", current_tree)
+  fn <- sprintf("parameter-estimates/mcmc-curated-%s.rds", current_tree)
   if (file.exists(fn)) {
     message("This tree was already analyzed...")
     next
@@ -96,20 +98,20 @@ for (current_tree in colnames(data_features)) {
   parse_polytomies(model2fit)
 
   # Building the model
-  term_overall_changes(model2fit, duplication = TRUE)  # Just constrain support
-  term_overall_changes(model2fit, duplication = FALSE) # Just constrain support
+  term_overall_changes(model2fit, duplication = 1)  # Just constrain support
+  term_overall_changes(model2fit, duplication = 0) # Just constrain support
 
-  term_gains(model2fit, 0:(nfunctions - 1))
-  term_gains(model2fit, 0:(nfunctions - 1), FALSE)
-  term_loss(model2fit, 0:(nfunctions - 1))
-  term_loss(model2fit, 0:(nfunctions - 1), FALSE)
+  term_gains(model2fit, 0:(nfunctions - 1), duplication = 1)
+  term_gains(model2fit, 0:(nfunctions - 1), duplication = 0)
+  term_loss(model2fit, 0:(nfunctions - 1), duplication = 1)
+  term_loss(model2fit, 0:(nfunctions - 1), duplication = 0)
 
   # Indicator variable (this makes the difference)
-  term_k_genes_changing(model2fit, 1, TRUE)
-  term_k_genes_changing(model2fit, 1, FALSE)
+  term_k_genes_changing(model2fit, 1, duplication = 1)
+  term_k_genes_changing(model2fit, 1, duplication = 0)
 
-  rule_limit_changes(model2fit, 0, 0, 4, TRUE)
-  rule_limit_changes(model2fit, 1, 0, 4, FALSE)
+  rule_limit_changes(model2fit, 0, 0, 4, duplication = 1)
+  rule_limit_changes(model2fit, 1, 0, 4, duplication = 0)
 
   # Currently fails b/c some nodes have 7 offspring.
   # 2^((7 + 1) * 4 functions) = 2 ^ 32 = 4,294,967,296 different cases
@@ -125,10 +127,13 @@ for (current_tree in colnames(data_features)) {
     # Genes changing at duplication
     # -1/2,
     # Gains and loss x nfunctions (duplication)
-    rep(1/2, nfunctions), rep(-1/2, nfunctions),
+    rep(2, nfunctions), rep(-2, nfunctions),
     # Gains and loss x nfunctions (speciation)
-    rep(-1/2, nfunctions), rep(-1/2, nfunctions),
-    c(1/2, 1/2)
+    rep(-2, nfunctions), rep(-2, nfunctions),
+    # Keeping track of a single gene changing
+    c(2, 2),
+    # Root node probabilities
+    rep(-2, nfunctions)
   )
 
   # Setting up names
@@ -140,6 +145,21 @@ for (current_tree in colnames(data_features)) {
     nsteps = 20000, burnin = 0, thin = 1,
     kernel = fmcmc::kernel_am(
       warmup = 2e3,
+      # We are fixing the first two because they are the overall
+      # changes, and we are using them for constraining the support
+      fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
+      lb     = -10,
+      ub     = 10
+    ))
+
+  ans_geese_mcmc_prior <- geese_mcmc(
+    model2fit,
+    prior  = function(p) dlogis(p, loc, scale = 2, log = TRUE), # Logit prior
+    nsteps = 20000, burnin = 0, thin = 1,
+    kernel = fmcmc::kernel_am(
+      warmup = 2e3,
+      # We are fixing the first two because they are the overall
+      # changes, and we are using them for constraining the support
       fixed  = c(TRUE,TRUE, rep(FALSE, nterms(model2fit) - 2)),
       lb     = -10,
       ub     = 10
@@ -150,12 +170,31 @@ for (current_tree in colnames(data_features)) {
 
   # Making predictions
   estimates <- colMeans(window(ans_geese_mcmc, start = 10000))
+  estimates_prior <- colMeans(window(ans_geese_mcmc_prior, start = 10000))
+
   # estimates <- c(0,0,ans_geese_mle$par)
-  pred_loo <- predict_geese(model2fit, estimates, leave_one_out = TRUE)
+  pred_loo <- predict_geese(
+    model2fit, estimates,
+    leave_one_out = TRUE,
+    only_annotated = TRUE
+    )
   pred_loo <- unlist(pred_loo)
+
+  pred_loo_prior <- predict_geese(
+    model2fit, estimates_prior,
+    leave_one_out = TRUE,
+    only_annotated = TRUE
+    )
+  
+  pred_loo_prior <- unlist(pred_loo_prior)
 
   auc_geese <- aphylo::prediction_score(
     x        = cbind(pred_loo),
+    expected = cbind(unlist(data[[ current_tree ]]$ann))
+  )
+
+  auc_geese_prior <- aphylo::prediction_score(
+    x        = cbind(pred_loo_prior),
     expected = cbind(unlist(data[[ current_tree ]]$ann))
   )
 
@@ -178,6 +217,24 @@ for (current_tree in colnames(data_features)) {
     )
   )
 
+  # Refitting the model with beta priors
+  ans_aphylo_beta <- aphylo_mcmc(
+    atree ~ mu_s + mu_d + Pi,
+    params = APHYLO_PARAM_DEFAULT[c("mu_d0", "mu_d1", "mu_s0", "mu_s1", "Pi")] * 0 + .5,
+    priors = bprior(c(9, 9, 2, 2, 2), c(2, 2, 9, 9, 9)),
+    control = list(
+      nsteps = 20000, burnin = 0, thin = 1,
+      kernel = fmcmc::kernel_am(
+        warmup = 2000,
+        lb     = .000001,
+        ub     = .999999,
+        eps    = 1e-4/20
+      ),
+      nchains = 1,
+      conv_checker = NULL
+    )
+  )
+
   # ans_aphylo_mle <- aphylo_mle(
   #   atree ~ mu_d + mu_s + Pi,
   #   params = APHYLO_PARAM_DEFAULT[c("mu_d0", "mu_d1", "mu_s0", "mu_s1", "Pi")] * 0 + .5
@@ -186,12 +243,19 @@ for (current_tree in colnames(data_features)) {
   ans_aphylo <- window(ans_aphylo, start = 10000)
   auc_aphylo <- prediction_score(ans_aphylo, loo = TRUE)
 
+  ans_aphylo_beta <- window(ans_aphylo_beta, start = 10000)
+  auc_aphylo_beta <- prediction_score(ans_aphylo_beta, loo = TRUE)
+
   output <- list(
-    geese_mcmc  = ans_geese_mcmc,
-    geese_auc   = auc_geese,
-    aphylo_mcmc = ans_aphylo,
-    aphylo_auc  = auc_aphylo,
-    tree        = partially_annotated[[ current_tree ]]
+    geese_mcmc       = ans_geese_mcmc,
+    geese_mcmc_prior = ans_geese_mcmc_prior,
+    geese_auc        = auc_geese,
+    geese_auc_prior  = auc_geese_prior,
+    aphylo_mcmc      = ans_aphylo,
+    aphylo_auc       = auc_aphylo,
+    aphylo_mcmc_beta = ans_aphylo_beta,
+    aphylo_auc_beta  = auc_aphylo_beta,
+    tree             = partially_annotated[[ current_tree ]]
   )
 
   saveRDS(output, file = fn)
